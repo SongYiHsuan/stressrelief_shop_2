@@ -1437,6 +1437,7 @@
       </div>
 
       <nav class="nav">
+        <button data-page="dashboard">📊 營運戰情室</button>
         <button class="active" data-page="members">👥 會員清單</button>
         <button data-page="broadcast">📣 發送內容</button>
         <button data-page="wallet">💰 儲值頁面</button>
@@ -1685,6 +1686,7 @@ const ADMIN_PIN = '9753';
 
         let icon = '';
 
+        if (page === 'dashboard') icon = ADMIN_SIDEBAR_ICONS.logs;
         if (page === 'members') icon = ADMIN_SIDEBAR_ICONS.members;
         if (page === 'broadcast') icon = ADMIN_SIDEBAR_ICONS.broadcast;
         if (page === 'wallet') icon = ADMIN_SIDEBAR_ICONS.wallet;
@@ -2614,13 +2616,12 @@ const ADMIN_PIN = '9753';
     }
 
     function normalizeAdminPage() {
-      if (state.page === 'dashboard') {
-        state.page = 'members';
+      if (!state.page) {
+        state.page = 'dashboard';
       }
     }
 
     function setPage(page) {
-      if (page === 'dashboard') page = 'members';
       if (page === 'scan') page = 'wallet';
       state.page = page;
 
@@ -2999,6 +3000,7 @@ const ADMIN_PIN = '9753';
       removeAdminLoginPage();
       renderAdminAuthBadge();
 
+      if (state.page === 'dashboard') renderDashboard();
       if (state.page === 'members') renderMembers();
       if (state.page === 'broadcast') renderBroadcast();
       if (state.page === 'wallet') renderWallet();
