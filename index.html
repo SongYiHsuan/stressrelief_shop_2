@@ -1423,6 +1423,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
 </head>
@@ -1515,6 +1516,12 @@
 
     const firebaseAuth = firebase.auth();
     const firebaseDb = firebase.firestore();
+
+    const firebaseFunctions =
+      firebase.app().functions(
+        'asia-east1'
+      );
+
 const ADMIN_PIN = '9753';
     const DEMO_MODE = !GAS_API_URL;
     const MEMBER_TAG_OPTIONS = ['', 'VIP', '老客', '常客', '新客'];
@@ -2326,6 +2333,41 @@ const ADMIN_PIN = '9753';
           return {
             member,
           };
+        }
+
+        case 'sendBroadcast': {
+          if (!firebaseAuth.currentUser) {
+            throw new Error(
+              '請先登入後台'
+            );
+          }
+
+          const callable =
+            firebaseFunctions
+              .httpsCallable(
+                'sendBroadcast'
+              );
+
+          try {
+            const result =
+              await callable(
+                payload || {}
+              );
+
+            return result.data || {};
+          } catch (error) {
+            console.error(
+              'sendBroadcast callable failed',
+              error
+            );
+
+            const message =
+              error?.details ||
+              error?.message ||
+              String(error);
+
+            throw new Error(message);
+          }
         }
 
         default:
