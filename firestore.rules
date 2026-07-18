@@ -7,115 +7,135 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function adminPath() {
-      return /databases/$(database)/documents/admins/$(request.auth.uid);
-    }
-
-    function adminExists() {
-      return signedIn() && exists(adminPath());
-    }
-
-    function adminData() {
-      return get(adminPath()).data;
-    }
-
-    function isActiveAdmin() {
-      return adminExists()
-        && adminData().active == true
+    function hasAdminClaim() {
+      return signedIn()
+        && request.auth.token.admin == true
         && (
-          adminData().role == 'admin'
-          || adminData().role == 'owner'
+          request.auth.token.role == "admin"
+          || request.auth.token.role == "owner"
         );
     }
 
-    function immutableMemberFieldsUnchanged(documentId) {
-      return request.resource.data.memberId
-          == resource.data.memberId
-
-        && request.resource.data.lineUserId
-          == resource.data.lineUserId
-
-        && request.resource.data.barcodeValue
-          == resource.data.barcodeValue
-
-        && (
-          !resource.data.keys().hasAny(['lineUserId'])
-          || request.resource.data.lineUserId == documentId
+    function adminDocumentExists() {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
         );
+    }
+
+    function adminDocument() {
+      return get(
+        /databases/$(database)/documents/admins/$(request.auth.uid)
+      ).data;
+    }
+
+    function hasActiveAdminDocument() {
+      return adminDocumentExists()
+        && adminDocument().active == true
+        && (
+          adminDocument().role == "admin"
+          || adminDocument().role == "owner"
+        );
+    }
+
+    function isAdmin() {
+      return hasAdminClaim()
+        && hasActiveAdminDocument();
     }
 
     /*
-     * 管理員帳號
+     * 後台管理員帳號
      */
     match /admins/{adminUid} {
-      allow read: if isActiveAdmin();
+      allow read: if isAdmin();
 
       /*
-       * 不允許從瀏覽器自行提升管理員權限。
+       * 禁止從網頁端修改自己的管理員角色。
        */
       allow create, update, delete: if false;
     }
 
     /*
-     * 會員主資料
+     * 會員資料
      */
     match /members/{memberDocumentId} {
-      allow read: if isActiveAdmin();
+      allow read: if isAdmin();
 
-      allow create: if isActiveAdmin()
-        && request.resource.data.memberId is string
-        && request.resource.data.memberId.size() > 0
-        && (
-          !request.resource.data.keys().hasAny(['lineUserId'])
-          || request.resource.data.lineUserId == memberDocumentId
-        );
+      allow create: if isAdmin();
 
-      allow update: if isActiveAdmin()
-        && immutableMemberFieldsUnchanged(memberDocumentId);
+      /*
+       * 可以修改一般會員欄位，
+       * 但禁止修改會員識別欄位。
+       *
+       * 使用 diff 判斷，不再強制舊資料一定要存在 lineUserId 欄位。
+       */
+      allow update: if isAdmin()
+        && !request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasAny([
+            'lineUserId',
+            'memberId',
+            'barcodeValue',
+            'firebaseUid',
+            'uid'
+          ]);
 
       allow delete: if false;
     }
 
     /*
-     * 儲值金紀錄：
-     * 可以新增，不允許竄改既有歷史紀錄。
-     */
-    match /walletLogs/{logId} {
-      allow read: if isActiveAdmin();
-
-      allow create: if isActiveAdmin()
-        && request.resource.data.operatorUid
-          == request.auth.uid
-        && request.resource.data.memberId is string;
-
-      allow update, delete: if false;
-    }
-
-    /*
-     * 點數紀錄
-     */
-    match /pointLogs/{logId} {
-      allow read: if isActiveAdmin();
-
-      allow create: if isActiveAdmin()
-        && request.resource.data.operatorUid
-          == request.auth.uid
-        && request.resource.data.memberId is string;
-
-      allow update, delete: if false;
-    }
-
-    /*
-     * 會員資料修改紀錄
+     * 會員資料編輯紀錄
+     *
+     * 這是你目前儲存時缺少的權限。
      */
     match /memberEditLogs/{logId} {
-      allow read: if isActiveAdmin();
+      allow read: if isAdmin();
 
-      allow create: if isActiveAdmin()
+      allow create: if isAdmin()
         && request.resource.data.operatorUid
-          == request.auth.uid
-        && request.resource.data.memberId is string;
+          == request.auth.uid;
 
+      allow update, delete: if false;
+    }
+
+    /*
+     * 儲值金異動紀錄
+     */
+    match /walletLogs/{logId} {
+      allow read: if isAdmin();
+
+      allow create: if isAdmin()
+        && (
+          !request.resource.data.keys().hasAny(['operatorUid'])
+          || request.resource.data.operatorUid
+            == request.auth.uid
+        );
+
+      allow update, delete: if false;
+    }
+
+    /*
+     * 點數異動紀錄
+     */
+    match /pointLogs/{logId} {
+      allow read: if isAdmin();
+
+      allow create: if isAdmin()
+        && (
+          !request.resource.data.keys().hasAny(['operatorUid'])
+          || request.resource.data.operatorUid
+            == request.auth.uid
+        );
+
+      allow update, delete: if false;
+    }
+
+    /*
+     * 店員操作紀錄
+     */
+    match /staffLogs/{logId} {
+      allow read, create: if isAdmin();
       allow update, delete: if false;
     }
 
@@ -123,38 +143,45 @@ service cloud.firestore {
      * 優惠券
      */
     match /coupons/{couponId} {
-      allow read, create, update: if isActiveAdmin();
+      allow read, create, update: if isAdmin();
       allow delete: if false;
     }
 
     match /memberCoupons/{memberCouponId} {
-      allow read, create, update: if isActiveAdmin();
+      allow read, create, update: if isAdmin();
       allow delete: if false;
     }
 
     /*
-     * 發送紀錄
+     * 發送內容與發送對象
      */
     match /broadcastLogs/{broadcastId} {
-      allow read, create, update: if isActiveAdmin();
+      allow read, create, update: if isAdmin();
       allow delete: if false;
     }
 
     match /broadcastTargets/{targetId} {
-      allow read, create, update: if isActiveAdmin();
+      allow read, create, update: if isAdmin();
       allow delete: if false;
     }
 
     /*
-     * 活動資料
+     * 活動
      */
     match /activities/{activityId} {
-      allow read, create, update: if isActiveAdmin();
+      allow read, create, update: if isAdmin();
       allow delete: if false;
     }
 
     /*
-     * 其他未明確允許的資料全部拒絕。
+     * OTP 禁止瀏覽器直接存取。
+     */
+    match /otps/{otpId} {
+      allow read, write: if false;
+    }
+
+    /*
+     * 其他集合全部拒絕。
      */
     match /{document=**} {
       allow read, write: if false;
