@@ -2909,11 +2909,18 @@ const ADMIN_PIN = '9753';
 
       const user = state.adminUser || firebaseAuth.currentUser || {};
       const profile = state.adminProfile || {};
-      const storeName = profile.storeName || '未設定店別';
-      const email = user.email || profile.email || '';
+      const displayName =
+        profile.displayName ||
+        profile.storeName ||
+        '未設定店別';
+
+      const email =
+        user.email ||
+        profile.email ||
+        '';
 
       badge.innerHTML = `
-        <span>${escapeHtml(storeName)}｜${escapeHtml(email)}</span>
+        <span>${escapeHtml(displayName)}｜${escapeHtml(email)}</span>
         <button type="button" id="adminLogoutBtn">登出</button>
       `;
 
