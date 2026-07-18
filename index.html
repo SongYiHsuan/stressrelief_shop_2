@@ -1507,8 +1507,7 @@
       projectId: "stressrelief2-f3345",
       storageBucket: "stressrelief2-f3345.firebasestorage.app",
       messagingSenderId: "448178166383",
-      appId: "1:448178166383:web:795a03a222569315c88b9a",
-      measurementId: "G-T8FD9PYNX7"
+      appId: "1:448178166383:web:269adae03db96123c88b9a"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -2065,7 +2064,368 @@ const ADMIN_PIN = '9753';
       }
     }
 
+
+    /**
+     * 新版後台專用：直接寫入 stressrelief2-f3345。
+     *
+     * 使用 Firestore Transaction，確保：
+     * 1. 會員儲值金更新
+     * 2. walletLogs 紀錄新增
+     * 兩者同時成功或同時失敗。
+     */
+    async function firebaseAdjustStoredValue(payload = {}) {
+      const user = firebaseAuth.currentUser;
+
+      if (!user) {
+        throw new Error('請先登入新版後台');
+      }
+
+      if (!state.adminProfile) {
+        throw new Error('尚未取得新版後台管理員權限');
+      }
+
+      const amount = Number(payload.amount || 0);
+
+      if (!Number.isFinite(amount) || amount === 0) {
+        throw new Error('儲值金異動金額不可為 0');
+      }
+
+      const selectedMember =
+        state.selectedMember || {};
+
+      const memberId = String(
+        payload.memberId ||
+        selectedMember.memberId ||
+        ''
+      ).trim();
+
+      const barcodeValue = String(
+        payload.barcodeValue ||
+        selectedMember.barcodeValue ||
+        ''
+      ).trim();
+
+      const directDocumentId = String(
+        selectedMember.lineUserId ||
+        selectedMember.documentId ||
+        selectedMember.firebaseDocumentId ||
+        selectedMember.uid ||
+        ''
+      ).trim();
+
+      let memberRef = null;
+
+      /*
+       * 新版資料庫文件編號原則上就是 lineUserId，
+       * 能直接定位時優先直接讀取。
+       */
+      if (directDocumentId) {
+        const directRef = firebaseDb
+          .collection('members')
+          .doc(directDocumentId);
+
+        const directSnapshot =
+          await directRef.get();
+
+        if (directSnapshot.exists) {
+          memberRef = directRef;
+        }
+      }
+
+      /*
+       * 找不到文件 ID 時，以 memberId 查詢。
+       */
+      if (!memberRef && memberId) {
+        const memberIdSnapshot =
+          await firebaseDb
+            .collection('members')
+            .where('memberId', '==', memberId)
+            .limit(2)
+            .get();
+
+        if (memberIdSnapshot.size > 1) {
+          throw new Error(
+            'Firebase 中有重複會員編號，已停止儲值'
+          );
+        }
+
+        if (!memberIdSnapshot.empty) {
+          memberRef =
+            memberIdSnapshot.docs[0].ref;
+        }
+      }
+
+      /*
+       * 最後才使用條碼查詢。
+       */
+      if (!memberRef && barcodeValue) {
+        const barcodeSnapshot =
+          await firebaseDb
+            .collection('members')
+            .where(
+              'barcodeValue',
+              '==',
+              barcodeValue
+            )
+            .limit(2)
+            .get();
+
+        if (barcodeSnapshot.size > 1) {
+          throw new Error(
+            'Firebase 中有重複會員條碼，已停止儲值'
+          );
+        }
+
+        if (!barcodeSnapshot.empty) {
+          memberRef =
+            barcodeSnapshot.docs[0].ref;
+        }
+      }
+
+      if (!memberRef) {
+        throw new Error(
+          '新版 Firebase 找不到這位會員'
+        );
+      }
+
+      const walletLogRef =
+        firebaseDb
+          .collection('walletLogs')
+          .doc();
+
+      const serverTimestamp =
+        firebase.firestore.FieldValue
+          .serverTimestamp();
+
+      let updatedMember = null;
+      let createdLog = null;
+
+      await firebaseDb.runTransaction(
+        async (transaction) => {
+          const memberSnapshot =
+            await transaction.get(memberRef);
+
+          if (!memberSnapshot.exists) {
+            throw new Error(
+              '會員資料已不存在，請重新查詢'
+            );
+          }
+
+          const member =
+            memberSnapshot.data() || {};
+
+          const beforeStoredValue =
+            Number(member.storedValue || 0);
+
+          const afterStoredValue =
+            beforeStoredValue + amount;
+
+          if (
+            !Number.isFinite(afterStoredValue)
+          ) {
+            throw new Error(
+              '儲值金計算結果錯誤'
+            );
+          }
+
+          if (afterStoredValue < 0) {
+            throw new Error(
+              '會員儲值金不足，無法扣除'
+            );
+          }
+
+          const displayName =
+            member.displayName ||
+            selectedMember.displayName ||
+            '';
+
+          const finalMemberId =
+            member.memberId ||
+            memberId ||
+            '';
+
+          const finalBarcodeValue =
+            member.barcodeValue ||
+            barcodeValue ||
+            '';
+
+          const lineUserId =
+            member.lineUserId ||
+            memberRef.id;
+
+          const type =
+            amount >= 0
+              ? '儲值'
+              : '使用';
+
+          transaction.update(
+            memberRef,
+            {
+              storedValue:
+                afterStoredValue,
+
+              updatedAt:
+                serverTimestamp,
+
+              lastVisitAt:
+                serverTimestamp,
+
+              updatedBy:
+                user.uid,
+
+              updatedByEmail:
+                user.email || '',
+            }
+          );
+
+          createdLog = {
+            logId:
+              walletLogRef.id,
+
+            memberDocumentId:
+              memberRef.id,
+
+            lineUserId,
+
+            memberId:
+              finalMemberId,
+
+            barcodeValue:
+              finalBarcodeValue,
+
+            displayName,
+
+            type,
+
+            amount,
+
+            beforeStoredValue,
+
+            afterStoredValue,
+
+            payMethod:
+              String(
+                payload.payMethod || ''
+              ).trim(),
+
+            note:
+              String(
+                payload.note || ''
+              ).trim(),
+
+            staff:
+              String(
+                payload.staff ||
+                user.email ||
+                ''
+              ).trim(),
+
+            operatorUid:
+              user.uid,
+
+            operatorEmail:
+              user.email || '',
+
+            storeName:
+              state.adminProfile.storeName ||
+              '',
+
+            createdAt:
+              serverTimestamp,
+          };
+
+          transaction.set(
+            walletLogRef,
+            createdLog
+          );
+
+          updatedMember = {
+            ...member,
+
+            documentId:
+              memberRef.id,
+
+            lineUserId,
+
+            memberId:
+              finalMemberId,
+
+            barcodeValue:
+              finalBarcodeValue,
+
+            displayName,
+
+            storedValue:
+              afterStoredValue,
+          };
+        }
+      );
+
+      /*
+       * 讓前台表格與已選會員立即更新，
+       * 不需要等待下一次重新整理。
+       */
+      state.members = (
+        state.members || []
+      ).map((member) => {
+        const sameDocument =
+          String(
+            member.lineUserId ||
+            member.documentId ||
+            ''
+          ) ===
+          String(
+            updatedMember.lineUserId ||
+            updatedMember.documentId ||
+            ''
+          );
+
+        const sameMemberId =
+          memberId &&
+          String(member.memberId || '') ===
+          String(updatedMember.memberId || '');
+
+        return sameDocument || sameMemberId
+          ? {
+              ...member,
+              ...updatedMember,
+            }
+          : member;
+      });
+
+      state.walletLogs = [
+        {
+          ...createdLog,
+          createdAt:
+            getNowText(),
+        },
+        ...(state.walletLogs || []),
+      ];
+
+      return {
+        member:
+          updatedMember,
+
+        log: {
+          ...createdLog,
+          createdAt:
+            getNowText(),
+        },
+      };
+    }
+
+
     async function api(action, payload = {}) {
+      /*
+       * 新版後台儲值金操作直接使用新版 Firebase。
+       * 不送舊 GAS，也不接觸舊 Firebase。
+       */
+      if (action === 'adjustStoredValue') {
+        return await firebaseAdjustStoredValue(
+          payload
+        );
+      }
+
       try {
         return await firebaseApi(action, payload);
       } catch (err) {
