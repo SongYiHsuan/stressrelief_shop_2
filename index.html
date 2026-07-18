@@ -1517,7 +1517,7 @@
     const firebaseDb = firebase.firestore();
 const ADMIN_PIN = '9753';
     const DEMO_MODE = !GAS_API_URL;
-    const MEMBER_TAG_OPTIONS = ['', 'VIP', '新客', '常客', '老客'];
+    const MEMBER_TAG_OPTIONS = ['', 'VIP', '老客', '常客', '新客'];
 
     const state = {
       authReady: true,
@@ -2011,6 +2011,135 @@ const ADMIN_PIN = '9753';
 
           return {
             members,
+          };
+        }
+
+        case 'updateMemberTags': {
+          const memberId =
+            String(payload.memberId || '')
+              .trim();
+
+          const tags =
+            String(payload.tags || '')
+              .trim();
+
+          const allowedTags = [
+            '',
+            'VIP',
+            '老客',
+            '常客',
+            '新客',
+          ];
+
+          if (!memberId) {
+            throw new Error(
+              '缺少會員編號'
+            );
+          }
+
+          if (!allowedTags.includes(tags)) {
+            throw new Error(
+              '標籤只能選擇 VIP、老客、常客、新客或無標籤'
+            );
+          }
+
+          const located =
+            await findMemberDocumentReference({
+              memberId,
+            });
+
+          const memberRef =
+            located.ref;
+
+          const snapshot =
+            located.snapshot;
+
+          const currentData =
+            snapshot.data() || {};
+
+          const adminUser =
+            firebaseAuth.currentUser;
+
+          const adminProfile =
+            state.adminProfile || {};
+
+          const storeName =
+            adminProfile.displayName ||
+            adminProfile.storeName ||
+            '';
+
+          const now =
+            firebase.firestore
+              .FieldValue
+              .serverTimestamp();
+
+          await memberRef.update({
+            tags,
+            updatedAt: now,
+            updatedBy:
+              adminUser.uid || '',
+            updatedByEmail:
+              adminUser.email || '',
+            updatedStoreName:
+              storeName,
+          });
+
+          const editLogRef =
+            firebaseDb
+              .collection('memberEditLogs')
+              .doc();
+
+          await editLogRef.set({
+            logId:
+              editLogRef.id,
+
+            memberDocumentId:
+              memberRef.id,
+
+            lineUserId:
+              currentData.lineUserId ||
+              memberRef.id,
+
+            memberId:
+              currentData.memberId ||
+              memberId,
+
+            displayName:
+              currentData.displayName ||
+              '',
+
+            action:
+              'updateMemberTags',
+
+            before: {
+              tags:
+                currentData.tags || '',
+            },
+
+            after: {
+              tags,
+            },
+
+            operatorUid:
+              adminUser.uid || '',
+
+            operatorEmail:
+              adminUser.email || '',
+
+            storeName,
+
+            createdAt: now,
+          });
+
+          return {
+            member: {
+              ...currentData,
+              tags,
+              documentId:
+                memberRef.id,
+              updatedAt:
+                new Date().toISOString(),
+            },
           };
         }
 
@@ -4866,13 +4995,34 @@ const ADMIN_PIN = '9753';
 
                 <div class="form-row">
                   <label>標籤</label>
-                  <input
-                    id="editTags"
-                    value="${escapeHtml(member.tags || '')}"
-                    placeholder="例如：VIP,常客"
-                  />
+
+                  <select id="editTags">
+                    ${MEMBER_TAG_OPTIONS.map(
+                      (tag) => `
+                        <option
+                          value="${escapeHtml(tag)}"
+                          ${
+                            String(
+                              member.tags || ''
+                            )
+                              .split(',')[0]
+                              .trim() === tag
+                              ? 'selected'
+                              : ''
+                          }
+                        >
+                          ${
+                            tag
+                              ? escapeHtml(tag)
+                              : '無標籤'
+                          }
+                        </option>
+                      `
+                    ).join('')}
+                  </select>
+
                   <div class="member-edit-hint">
-                    多個標籤請用逗號分隔。
+                    每位會員選擇一個主要標籤。
                   </div>
                 </div>
 
@@ -5188,11 +5338,7 @@ const ADMIN_PIN = '9753';
           document.getElementById(
             'editTags'
           )?.value || ''
-        )
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean)
-          .join(','),
+        ).trim(),
 
         storedValue:
           normalizeMemberNumber(
@@ -5294,7 +5440,9 @@ const ADMIN_PIN = '9753';
           adminUser.uid || '';
 
         const storeName =
-          state.adminProfile.storeName || '';
+          state.adminProfile.displayName ||
+          state.adminProfile.storeName ||
+          '';
 
         const now =
           firebase.firestore.FieldValue
