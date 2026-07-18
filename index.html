@@ -1711,6 +1711,80 @@ const ADMIN_PIN = '9753';
       return Number(value || 0).toLocaleString('zh-TW');
     }
 
+
+    /**
+     * 統一台灣電話格式，避免試算表將第一個 0 吃掉。
+     *
+     * 973113721      -> 0973113721
+     * 886973113721   -> 0973113721
+     * +886973113721  -> 0973113721
+     * 0973113721.0   -> 0973113721
+     */
+    function normalizeTaiwanPhone(value) {
+      if (
+        value === undefined ||
+        value === null
+      ) {
+        return '';
+      }
+
+      let raw = String(value).trim();
+
+      if (!raw) {
+        return '';
+      }
+
+      // Excel／Google Sheet 數值可能出現 .0
+      raw = raw.replace(/\.0+$/, '');
+
+      // 只保留數字
+      let digits = raw.replace(/\D/g, '');
+
+      if (!digits) {
+        return '';
+      }
+
+      // +8869xxxxxxxx／8869xxxxxxxx
+      if (
+        digits.startsWith('886') &&
+        digits.length >= 11
+      ) {
+        digits = '0' + digits.slice(3);
+      }
+
+      // 手機號碼被吃掉開頭 0
+      if (
+        digits.length === 9 &&
+        digits.startsWith('9')
+      ) {
+        digits = '0' + digits;
+      }
+
+      return digits;
+    }
+
+    function normalizeMemberPhone(member) {
+      if (
+        !member ||
+        typeof member !== 'object'
+      ) {
+        return member;
+      }
+
+      return {
+        ...member,
+        phone: normalizeTaiwanPhone(
+          member.phone
+        ),
+      };
+    }
+
+    function normalizeMemberList(list) {
+      return Array.isArray(list)
+        ? list.map(normalizeMemberPhone)
+        : [];
+    }
+
     function getNowText() {
       const d = new Date();
       const pad = (n) => String(n).padStart(2, '0');
@@ -2222,7 +2296,7 @@ const ADMIN_PIN = '9753';
       try {
         const data = await api('getDashboard');
 
-        state.members = data.members || [];
+        state.members = normalizeMemberList(data.members);
         state.pointLogs = data.pointLogs || [];
         state.walletLogs = data.walletLogs || [];
         state.lastRefreshAt = getNowText();
@@ -2273,7 +2347,7 @@ const ADMIN_PIN = '9753';
     function preloadData() {
       api('getDashboard')
         .then((data) => {
-          state.members = data.members || [];
+          state.members = normalizeMemberList(data.members);
           state.pointLogs = data.pointLogs || [];
           state.walletLogs = data.walletLogs || [];
 
@@ -2575,7 +2649,7 @@ const ADMIN_PIN = '9753';
       try {
         const data = await api('getDashboard');
 
-        state.members = data.members || [];
+        state.members = normalizeMemberList(data.members);
         state.pointLogs = data.pointLogs || [];
         state.walletLogs = data.walletLogs || [];
       } catch (err) {
@@ -2703,7 +2777,7 @@ const ADMIN_PIN = '9753';
 
       api('getDashboard')
         .then((data) => {
-          state.members = data.members || [];
+          state.members = normalizeMemberList(data.members);
           state.pointLogs = data.pointLogs || [];
           state.walletLogs = data.walletLogs || [];
           paint();
@@ -2765,7 +2839,7 @@ const ADMIN_PIN = '9753';
           const filtered = state.members.filter((m) => {
             const haystack = [
               m.displayName,
-              m.phone,
+              normalizeTaiwanPhone(m.phone),
               m.memberId,
               m.barcodeValue,
               m.tags,
@@ -2791,7 +2865,7 @@ const ADMIN_PIN = '9753';
 
       api('getMembers')
         .then((data) => {
-          state.members = data.members || [];
+          state.members = normalizeMemberList(data.members);
 
           if (state.page === 'members') {
             paint();
@@ -2837,7 +2911,10 @@ const ADMIN_PIN = '9753';
           tags,
         });
 
-        const updatedMember = data.member;
+        const updatedMember =
+          normalizeMemberPhone(
+            data.member || {}
+          );
 
         state.members = state.members.map((member) => {
           if (String(member.memberId) === String(memberId)) {
@@ -3094,7 +3171,7 @@ const ADMIN_PIN = '9753';
                   <label>電話</label>
                   <input
                     id="editPhone"
-                    value="${escapeHtml(member.phone || '')}"
+                    value="${escapeHtml(normalizeTaiwanPhone(member.phone))}"
                     inputmode="tel"
                     placeholder="0912345678"
                   />
@@ -3388,12 +3465,10 @@ const ADMIN_PIN = '9753';
     }
 
     function getMemberEditFormValues() {
-      const phone = String(
+      const phone = normalizeTaiwanPhone(
         document.getElementById('editPhone')?.value ||
         ''
-      )
-        .replace(/[^0-9]/g, '')
-        .trim();
+      );
 
       if (
         phone &&
@@ -4042,7 +4117,7 @@ const ADMIN_PIN = '9753';
                     <div class="member-name">${escapeHtml(m.displayName)}</div>
                     <div class="muted">${escapeHtml(m.memberId)}</div>
                   </td>
-                  <td>${escapeHtml(m.phone || '')}</td>
+                  <td>${escapeHtml(normalizeTaiwanPhone(m.phone))}</td>
                   <td><span class="tag">${escapeHtml(m.level || '一般會員')}</span></td>
                   <td>$${money(m.storedValue)}</td>
                   <td>$${money(m.totalSpend)}</td>
@@ -4315,7 +4390,7 @@ const ADMIN_PIN = '9753';
           if (previewEl) {
             previewEl.innerHTML =
               renderMembersTable(
-                data.members || []
+                normalizeMemberList(data.members)
               );
           }
         } catch (err) {
