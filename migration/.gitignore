@@ -1,0 +1,7 @@
+node_modules/
+serviceAccountKey.json
+*.xlsx
+migration-preview.json
+migration-result.json
+verification-result.json
+.env

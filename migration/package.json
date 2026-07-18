@@ -1,0 +1,16 @@
+{
+  "name": "stressrelief2-migration",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dry-run": "node migrate.mjs --dry-run",
+    "migrate": "node migrate.mjs --execute",
+    "verify": "node verify.mjs",
+    "create-admin": "node create-admin.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0",
+    "xlsx": "^0.18.5"
+  }
+}
