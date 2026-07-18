@@ -3,6 +3,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isMemberTagAdmin() {
+      return request.auth != null
+        && exists(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        ).data.active == true
+        && get(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        ).data.projectId == "stressrelief2-f3345";
+    }
+
+
     function signedIn() {
       return request.auth != null;
     }
@@ -28,20 +42,23 @@ service cloud.firestore {
         );
     }
 
-    function immutableMemberFieldsUnchanged(documentId) {
-      return request.resource.data.memberId
-          == resource.data.memberId
-
-        && request.resource.data.lineUserId
-          == resource.data.lineUserId
-
-        && request.resource.data.barcodeValue
-          == resource.data.barcodeValue
-
-        && (
-          !resource.data.keys().hasAny(['lineUserId'])
-          || request.resource.data.lineUserId == documentId
-        );
+    /*
+     * 防止會員識別欄位被後台修改。
+     *
+     * 使用 diff 判斷，可以相容沒有 lineUserId、
+     * barcodeValue 等欄位的既有會員文件。
+     */
+    function memberIdentityFieldsUnchanged() {
+      return !request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasAny([
+          'memberId',
+          'lineUserId',
+          'barcodeValue',
+          'firebaseUid',
+          'uid'
+        ]);
     }
 
     /*
@@ -51,7 +68,7 @@ service cloud.firestore {
       allow read: if isActiveAdmin();
 
       /*
-       * 不允許從瀏覽器自行提升管理員權限。
+       * 管理員不能從前端修改自己的角色與啟用狀態。
        */
       allow create, update, delete: if false;
     }
@@ -62,23 +79,28 @@ service cloud.firestore {
     match /members/{memberDocumentId} {
       allow read: if isActiveAdmin();
 
+      /*
+       * 新會員主要由 Firebase Functions 建立。
+       * 若後台未來需要建立會員，也僅限管理員。
+       */
       allow create: if isActiveAdmin()
         && request.resource.data.memberId is string
-        && request.resource.data.memberId.size() > 0
-        && (
-          !request.resource.data.keys().hasAny(['lineUserId'])
-          || request.resource.data.lineUserId == memberDocumentId
-        );
+        && request.resource.data.memberId.size() > 0;
 
+      /*
+       * 可修改姓名、電話、點數、儲值金、標籤、
+       * 最後到訪等資料，但不可修改識別欄位。
+       */
       allow update: if isActiveAdmin()
-        && immutableMemberFieldsUnchanged(memberDocumentId);
+        && memberIdentityFieldsUnchanged();
 
       allow delete: if false;
     }
 
     /*
-     * 儲值金紀錄：
-     * 可以新增，不允許竄改既有歷史紀錄。
+     * 儲值金紀錄
+     *
+     * 新版 adjustStoredValue Transaction 會建立此紀錄。
      */
     match /walletLogs/{logId} {
       allow read: if isActiveAdmin();
@@ -86,8 +108,14 @@ service cloud.firestore {
       allow create: if isActiveAdmin()
         && request.resource.data.operatorUid
           == request.auth.uid
-        && request.resource.data.memberId is string;
+        && request.resource.data.memberId is string
+        && request.resource.data.amount is number
+        && request.resource.data.beforeStoredValue is number
+        && request.resource.data.afterStoredValue is number;
 
+      /*
+       * 歷史金流紀錄禁止修改與刪除。
+       */
       allow update, delete: if false;
     }
 
@@ -106,7 +134,7 @@ service cloud.firestore {
     }
 
     /*
-     * 會員資料修改紀錄
+     * 會員資料修改稽核紀錄
      */
     match /memberEditLogs/{logId} {
       allow read: if isActiveAdmin();
@@ -115,6 +143,17 @@ service cloud.firestore {
         && request.resource.data.operatorUid
           == request.auth.uid
         && request.resource.data.memberId is string;
+
+      allow update, delete: if false;
+    }
+
+    /*
+     * 店員操作紀錄
+     */
+    match /staffLogs/{logId} {
+      allow read: if isActiveAdmin();
+
+      allow create: if isActiveAdmin();
 
       allow update, delete: if false;
     }
@@ -133,7 +172,7 @@ service cloud.firestore {
     }
 
     /*
-     * 發送紀錄
+     * 發送內容與發送對象
      */
     match /broadcastLogs/{broadcastId} {
       allow read, create, update: if isActiveAdmin();
@@ -154,10 +193,22 @@ service cloud.firestore {
     }
 
     /*
-     * 其他未明確允許的資料全部拒絕。
+     * OTP 禁止從前端或後台瀏覽器直接讀寫。
+     */
+    match /otps/{otpId} {
+      allow read, write: if false;
+    }
+
+    /*
+     * 未明確開放的集合全部拒絕。
      */
     match /{document=**} {
       allow read, write: if false;
     }
+
+    match /settings/{document=**} {
+      allow read, create, update, delete: if isMemberTagAdmin();
+    }
+
   }
 }
