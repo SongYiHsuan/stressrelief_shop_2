@@ -1524,7 +1524,7 @@
 
 const ADMIN_PIN = '9753';
     const DEMO_MODE = !GAS_API_URL;
-    const MEMBER_TAG_OPTIONS = ['', 'VIP', '老客', '常客', '新客'];
+    const MEMBER_TAG_OPTIONS = ['', 'VIP', '老客', '新客', '常客'];
 
     const state = {
       authReady: true,
@@ -1540,6 +1540,7 @@ const ADMIN_PIN = '9753';
       broadcastPreviewId: '',
       broadcastPreviewCount: 0,
       selectedMember: null,
+      memberTagOptionsLoaded: false,
       scannerStream: null,
       scanTimer: null,
     };
@@ -4823,6 +4824,31 @@ const ADMIN_PIN = '9753';
 
       paint();
 
+      loadMemberTagOptions()
+        .then(() => {
+          if (
+            state.page === 'members'
+          ) {
+            const table =
+              document.getElementById(
+                'membersTable'
+              );
+
+            if (table) {
+              table.innerHTML =
+                renderMembersTable(
+                  state.members
+                );
+            }
+          }
+        })
+        .catch((error) => {
+          console.error(
+            '會員標籤分類載入失敗',
+            error
+          );
+        });
+
       api('getMembers')
         .then((data) => {
           state.members = normalizeMemberList(data.members);
@@ -4839,6 +4865,704 @@ const ADMIN_PIN = '9753';
           }
         });
     }
+
+    function normalizeMemberTagOptions(values) {
+      const source =
+        Array.isArray(values)
+          ? values
+          : [];
+
+      const unique = [];
+
+      source.forEach((value) => {
+        const tag =
+          String(value || '').trim();
+
+        if (
+          tag &&
+          !unique.includes(tag)
+        ) {
+          unique.push(tag);
+        }
+      });
+
+      return unique;
+    }
+
+    function setMemberTagOptions(values) {
+      const normalized =
+        normalizeMemberTagOptions(values);
+
+      MEMBER_TAG_OPTIONS.splice(
+        0,
+        MEMBER_TAG_OPTIONS.length,
+        '',
+        ...normalized
+      );
+
+      state.memberTagOptionsLoaded = true;
+    }
+
+    async function loadMemberTagOptions() {
+      try {
+        const snapshot =
+          await firebaseDb
+            .collection('settings')
+            .doc('memberTags')
+            .get();
+
+        if (
+          snapshot.exists &&
+          Array.isArray(
+            snapshot.data()?.items
+          )
+        ) {
+          setMemberTagOptions(
+            snapshot.data().items
+          );
+        } else {
+          setMemberTagOptions([
+            'VIP',
+            '老客',
+            '新客',
+            '常客',
+          ]);
+
+          await firebaseDb
+            .collection('settings')
+            .doc('memberTags')
+            .set(
+              {
+                items:
+                  MEMBER_TAG_OPTIONS
+                    .filter(Boolean),
+
+                updatedAt:
+                  firebase.firestore
+                    .FieldValue
+                    .serverTimestamp(),
+
+                updatedBy:
+                  firebaseAuth
+                    .currentUser
+                    ?.uid || '',
+
+                updatedByEmail:
+                  firebaseAuth
+                    .currentUser
+                    ?.email || '',
+              },
+              {
+                merge: true,
+              }
+            );
+        }
+
+        return MEMBER_TAG_OPTIONS;
+      } catch (error) {
+        console.error(
+          'loadMemberTagOptions failed',
+          error
+        );
+
+        setMemberTagOptions([
+          'VIP',
+          '老客',
+          '新客',
+          '常客',
+        ]);
+
+        return MEMBER_TAG_OPTIONS;
+      }
+    }
+
+    async function saveMemberTagOptions(
+      options
+    ) {
+      const normalized =
+        normalizeMemberTagOptions(
+          options
+        );
+
+      if (!normalized.length) {
+        throw new Error(
+          '至少需要保留一個標籤分類'
+        );
+      }
+
+      await firebaseDb
+        .collection('settings')
+        .doc('memberTags')
+        .set(
+          {
+            items: normalized,
+
+            updatedAt:
+              firebase.firestore
+                .FieldValue
+                .serverTimestamp(),
+
+            updatedBy:
+              firebaseAuth
+                .currentUser
+                ?.uid || '',
+
+            updatedByEmail:
+              firebaseAuth
+                .currentUser
+                ?.email || '',
+
+            storeName:
+              state.adminProfile
+                ?.displayName ||
+              state.adminProfile
+                ?.storeName ||
+              '',
+          },
+          {
+            merge: true,
+          }
+        );
+
+      setMemberTagOptions(normalized);
+
+      refreshMemberTagControls();
+    }
+
+    function refreshMemberTagControls() {
+      document
+        .querySelectorAll(
+          '.member-tag-select'
+        )
+        .forEach((select) => {
+          const memberId =
+            select.dataset.memberId;
+
+          const member =
+            state.members.find(
+              (item) =>
+                String(item.memberId) ===
+                String(memberId)
+            );
+
+          const currentTag =
+            String(
+              member?.tags || ''
+            )
+              .split(',')[0]
+              .trim();
+
+          select.innerHTML =
+            MEMBER_TAG_OPTIONS.map(
+              (tag) => `
+                <option
+                  value="${escapeHtml(tag)}"
+                  ${
+                    tag === currentTag
+                      ? 'selected'
+                      : ''
+                  }
+                >
+                  ${
+                    tag
+                      ? escapeHtml(tag)
+                      : '無標籤'
+                  }
+                </option>
+              `
+            ).join('');
+        });
+
+      const membersTable =
+        document.getElementById(
+          'membersTable'
+        );
+
+      if (
+        membersTable &&
+        state.page === 'members'
+      ) {
+        membersTable.innerHTML =
+          renderMembersTable(
+            state.members
+          );
+      }
+    }
+
+    function closeMemberTagManager() {
+      const modal =
+        document.getElementById(
+          'memberTagManagerModal'
+        );
+
+      if (modal) {
+        modal.remove();
+      }
+    }
+
+    function renderMemberTagManagerRows() {
+      const container =
+        document.getElementById(
+          'memberTagManagerRows'
+        );
+
+      if (!container) {
+        return;
+      }
+
+      const tags =
+        MEMBER_TAG_OPTIONS
+          .filter(Boolean);
+
+      container.innerHTML =
+        tags.map(
+          (tag, index) => `
+            <div
+              style="
+                display:grid;
+                grid-template-columns:1fr auto auto;
+                gap:8px;
+                align-items:center;
+                padding:10px 0;
+                border-bottom:1px solid #edf0f2;
+              "
+            >
+              <div
+                style="
+                  font-weight:900;
+                  overflow-wrap:anywhere;
+                "
+              >
+                ${escapeHtml(tag)}
+              </div>
+
+              <button
+                type="button"
+                class="btn secondary"
+                style="
+                  padding:8px 11px;
+                  min-width:auto;
+                "
+                onclick="editMemberTagOption(${index})"
+                aria-label="編輯 ${escapeHtml(tag)}"
+              >
+                ✏️ 編輯
+              </button>
+
+              <button
+                type="button"
+                class="btn danger"
+                style="
+                  padding:8px 11px;
+                  min-width:auto;
+                "
+                onclick="deleteMemberTagOption(${index})"
+                aria-label="刪除 ${escapeHtml(tag)}"
+              >
+                刪除
+              </button>
+            </div>
+          `
+        ).join('');
+    }
+
+    async function openMemberTagManager() {
+      await loadMemberTagOptions();
+
+      closeMemberTagManager();
+
+      const modal =
+        document.createElement('div');
+
+      modal.id =
+        'memberTagManagerModal';
+
+      modal.style.cssText = `
+        position:fixed;
+        inset:0;
+        z-index:99999;
+        background:rgba(15,23,42,.5);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+      `;
+
+      modal.innerHTML = `
+        <div
+          style="
+            width:min(560px,100%);
+            max-height:88vh;
+            overflow:auto;
+            background:#fff;
+            border-radius:22px;
+            padding:20px;
+            box-shadow:0 28px 80px rgba(15,23,42,.28);
+          "
+        >
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:12px;
+              margin-bottom:18px;
+            "
+          >
+            <div>
+              <div
+                style="
+                  font-size:22px;
+                  font-weight:950;
+                "
+              >
+                會員標籤分類
+              </div>
+
+              <div
+                class="muted"
+                style="margin-top:5px"
+              >
+                新增、重新命名或刪除會員分類
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="btn secondary"
+              style="
+                padding:9px 12px;
+                min-width:auto;
+              "
+              onclick="closeMemberTagManager()"
+            >
+              關閉
+            </button>
+          </div>
+
+          <div
+            style="
+              display:grid;
+              grid-template-columns:1fr auto;
+              gap:10px;
+              margin-bottom:12px;
+            "
+          >
+            <input
+              id="newMemberTagInput"
+              maxlength="20"
+              placeholder="輸入新分類，例如：高消費"
+            />
+
+            <button
+              type="button"
+              class="btn"
+              onclick="addMemberTagOption()"
+            >
+              新增
+            </button>
+          </div>
+
+          <div
+            id="memberTagManagerMessage"
+            class="message"
+          ></div>
+
+          <div
+            id="memberTagManagerRows"
+          ></div>
+        </div>
+      `;
+
+      modal.addEventListener(
+        'click',
+        (event) => {
+          if (event.target === modal) {
+            closeMemberTagManager();
+          }
+        }
+      );
+
+      document.body.appendChild(modal);
+
+      const input =
+        document.getElementById(
+          'newMemberTagInput'
+        );
+
+      if (input) {
+        input.addEventListener(
+          'keydown',
+          (event) => {
+            if (event.key === 'Enter') {
+              addMemberTagOption();
+            }
+          }
+        );
+
+        input.focus();
+      }
+
+      renderMemberTagManagerRows();
+    }
+
+    function showMemberTagManagerMessage(
+      message,
+      isError = false
+    ) {
+      const box =
+        document.getElementById(
+          'memberTagManagerMessage'
+        );
+
+      if (!box) {
+        return;
+      }
+
+      box.className =
+        'message show';
+
+      box.style.background =
+        isError
+          ? '#fef2f2'
+          : '#ecfdf5';
+
+      box.style.color =
+        isError
+          ? '#991b1b'
+          : '#166534';
+
+      box.textContent = message;
+    }
+
+    async function addMemberTagOption() {
+      const input =
+        document.getElementById(
+          'newMemberTagInput'
+        );
+
+      const newTag =
+        String(input?.value || '')
+          .trim();
+
+      if (!newTag) {
+        showMemberTagManagerMessage(
+          '請輸入分類名稱',
+          true
+        );
+
+        return;
+      }
+
+      const current =
+        MEMBER_TAG_OPTIONS
+          .filter(Boolean);
+
+      if (current.includes(newTag)) {
+        showMemberTagManagerMessage(
+          '這個分類已經存在',
+          true
+        );
+
+        return;
+      }
+
+      try {
+        await saveMemberTagOptions([
+          ...current,
+          newTag,
+        ]);
+
+        if (input) {
+          input.value = '';
+        }
+
+        renderMemberTagManagerRows();
+
+        showMemberTagManagerMessage(
+          `已新增分類：${newTag}`
+        );
+      } catch (error) {
+        showMemberTagManagerMessage(
+          error.message ||
+          String(error),
+          true
+        );
+      }
+    }
+
+    async function editMemberTagOption(
+      index
+    ) {
+      const current =
+        MEMBER_TAG_OPTIONS
+          .filter(Boolean);
+
+      const oldTag =
+        current[index];
+
+      if (!oldTag) {
+        return;
+      }
+
+      const newTag =
+        window.prompt(
+          '請輸入新的分類名稱',
+          oldTag
+        );
+
+      if (newTag === null) {
+        return;
+      }
+
+      const normalized =
+        String(newTag).trim();
+
+      if (!normalized) {
+        showMemberTagManagerMessage(
+          '分類名稱不可空白',
+          true
+        );
+
+        return;
+      }
+
+      if (
+        normalized !== oldTag &&
+        current.includes(normalized)
+      ) {
+        showMemberTagManagerMessage(
+          '這個分類已經存在',
+          true
+        );
+
+        return;
+      }
+
+      try {
+        const updated =
+          [...current];
+
+        updated[index] = normalized;
+
+        await saveMemberTagOptions(
+          updated
+        );
+
+        const affectedMembers =
+          state.members.filter(
+            (member) =>
+              String(member.tags || '')
+                .split(',')[0]
+                .trim() === oldTag
+          );
+
+        for (
+          const member
+          of affectedMembers
+        ) {
+          await api(
+            'updateMemberTags',
+            {
+              memberId:
+                member.memberId,
+
+              tags: normalized,
+            }
+          );
+
+          member.tags = normalized;
+        }
+
+        renderMemberTagManagerRows();
+
+        showMemberTagManagerMessage(
+          `已將「${oldTag}」改為「${normalized}」`
+        );
+      } catch (error) {
+        showMemberTagManagerMessage(
+          error.message ||
+          String(error),
+          true
+        );
+      }
+    }
+
+    async function deleteMemberTagOption(
+      index
+    ) {
+      const current =
+        MEMBER_TAG_OPTIONS
+          .filter(Boolean);
+
+      const target =
+        current[index];
+
+      if (!target) {
+        return;
+      }
+
+      const affectedMembers =
+        state.members.filter(
+          (member) =>
+            String(member.tags || '')
+              .split(',')[0]
+              .trim() === target
+        );
+
+      const confirmed =
+        window.confirm(
+          affectedMembers.length
+            ? `「${target}」目前有 ${affectedMembers.length} 位會員使用。\n\n刪除後，這些會員會改成「無標籤」。確定刪除嗎？`
+            : `確定刪除分類「${target}」嗎？`
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        const updated =
+          current.filter(
+            (_, itemIndex) =>
+              itemIndex !== index
+          );
+
+        await saveMemberTagOptions(
+          updated
+        );
+
+        for (
+          const member
+          of affectedMembers
+        ) {
+          await api(
+            'updateMemberTags',
+            {
+              memberId:
+                member.memberId,
+
+              tags: '',
+            }
+          );
+
+          member.tags = '';
+        }
+
+        renderMemberTagManagerRows();
+
+        showMemberTagManagerMessage(
+          `已刪除分類：${target}`
+        );
+      } catch (error) {
+        showMemberTagManagerMessage(
+          error.message ||
+          String(error),
+          true
+        );
+      }
+    }
+
 
     function renderMemberTagSelect(member) {
       const currentTag = String(member.tags || '').split(',')[0].trim();
@@ -6084,7 +6808,37 @@ const ADMIN_PIN = '9753';
                 <th>等級</th>
                 <th>儲值金</th>
                 <th>累積消費</th>
-                <th>標籤</th>
+                <th>
+                  <span
+                    style="
+                      display:inline-flex;
+                      align-items:center;
+                      gap:6px;
+                    "
+                  >
+                    標籤
+
+                    <button
+                      type="button"
+                      title="管理會員標籤分類"
+                      aria-label="管理會員標籤分類"
+                      onclick="openMemberTagManager()"
+                      style="
+                        width:28px;
+                        height:28px;
+                        padding:0;
+                        border-radius:8px;
+                        background:#eef2f7;
+                        display:inline-flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:14px;
+                      "
+                    >
+                      ✏️
+                    </button>
+                  </span>
+                </th>
                 <th>最後到訪</th>
                 <th>編輯</th>
               </tr>
