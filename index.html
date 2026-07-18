@@ -3051,117 +3051,1396 @@ const ADMIN_PIN = '9753';
       `;
     }
 
-    function renderDashboard() {
-      setTitle('總覽', '會員、儲值金與發送紀錄管理');
+    const dashboardState = {
+      range: 'month',
+      startDate: '',
+      endDate: '',
+    };
 
-      const page = document.getElementById('page');
+    function dashboardPad(value) {
+      return String(value).padStart(2, '0');
+    }
+
+    function dashboardDateValue(date) {
+      return (
+        date.getFullYear() +
+        '-' +
+        dashboardPad(date.getMonth() + 1) +
+        '-' +
+        dashboardPad(date.getDate())
+      );
+    }
+
+    function dashboardParseDate(value) {
+      if (!value) {
+        return null;
+      }
+
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime())
+          ? null
+          : value;
+      }
+
+      if (
+        value &&
+        typeof value.toDate === 'function'
+      ) {
+        const result = value.toDate();
+
+        return Number.isNaN(result.getTime())
+          ? null
+          : result;
+      }
+
+      if (
+        value &&
+        typeof value.seconds === 'number'
+      ) {
+        const result =
+          new Date(value.seconds * 1000);
+
+        return Number.isNaN(result.getTime())
+          ? null
+          : result;
+      }
+
+      const raw =
+        String(value).trim();
+
+      if (!raw) {
+        return null;
+      }
+
+      const timestampMatch = raw.match(
+        /^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})(?:\s+|T)?(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?/
+      );
+
+      if (timestampMatch) {
+        const result = new Date(
+          Number(timestampMatch[1]),
+          Number(timestampMatch[2]) - 1,
+          Number(timestampMatch[3]),
+          Number(timestampMatch[4] || 0),
+          Number(timestampMatch[5] || 0),
+          Number(timestampMatch[6] || 0)
+        );
+
+        return Number.isNaN(result.getTime())
+          ? null
+          : result;
+      }
+
+      const result = new Date(raw);
+
+      return Number.isNaN(result.getTime())
+        ? null
+        : result;
+    }
+
+    function dashboardStartOfDay(date) {
+      return new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        0,
+        0,
+        0,
+        0
+      );
+    }
+
+    function dashboardEndOfDay(date) {
+      return new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        23,
+        59,
+        59,
+        999
+      );
+    }
+
+    function setDashboardDateRange(type) {
+      const now = new Date();
+
+      let start =
+        dashboardStartOfDay(now);
+
+      let end =
+        dashboardEndOfDay(now);
+
+      if (type === 'yesterday') {
+        start.setDate(
+          start.getDate() - 1
+        );
+
+        end =
+          dashboardEndOfDay(start);
+      }
+
+      if (type === '7d') {
+        start.setDate(
+          start.getDate() - 6
+        );
+      }
+
+      if (type === '30d') {
+        start.setDate(
+          start.getDate() - 29
+        );
+      }
+
+      if (type === 'month') {
+        start = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          1
+        );
+
+        end = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999
+        );
+      }
+
+      if (type === 'lastMonth') {
+        start = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1
+        );
+
+        end = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          0,
+          23,
+          59,
+          59,
+          999
+        );
+      }
+
+      dashboardState.range = type;
+      dashboardState.startDate =
+        dashboardDateValue(start);
+
+      dashboardState.endDate =
+        dashboardDateValue(end);
+    }
+
+    function dashboardIsUsage(log) {
+      const type =
+        String(log.type || '').trim();
+
+      const amount =
+        Number(log.amount || 0);
+
+      return (
+        amount < 0 ||
+        type.includes('使用') ||
+        type.includes('扣款') ||
+        type.includes('消費')
+      );
+    }
+
+    function dashboardMoney(value) {
+      return '$' + money(
+        Math.round(Number(value || 0))
+      );
+    }
+
+    function dashboardCalculate() {
+      if (
+        !dashboardState.startDate ||
+        !dashboardState.endDate
+      ) {
+        setDashboardDateRange('month');
+      }
+
+      const start =
+        dashboardStartOfDay(
+          new Date(
+            dashboardState.startDate +
+            'T00:00:00'
+          )
+        );
+
+      const end =
+        dashboardEndOfDay(
+          new Date(
+            dashboardState.endDate +
+            'T00:00:00'
+          )
+        );
+
+      const members =
+        state.members || [];
+
+      const allLogs =
+        state.walletLogs || [];
+
+      const logs = allLogs
+        .map((log) => ({
+          ...log,
+          dashboardDate:
+            dashboardParseDate(
+              log.createdAt
+            ),
+        }))
+        .filter((log) => {
+          return (
+            log.dashboardDate &&
+            log.dashboardDate >= start &&
+            log.dashboardDate <= end
+          );
+        });
+
+      const depositLogs =
+        logs.filter(
+          (log) => !dashboardIsUsage(log)
+        );
+
+      const usageLogs =
+        logs.filter(dashboardIsUsage);
+
+      const depositTotal =
+        depositLogs.reduce(
+          (sum, log) => {
+            return sum +
+              Math.abs(
+                Number(log.amount || 0)
+              );
+          },
+          0
+        );
+
+      const usageTotal =
+        usageLogs.reduce(
+          (sum, log) => {
+            return sum +
+              Math.abs(
+                Number(log.amount || 0)
+              );
+          },
+          0
+        );
+
+      const currentBalance =
+        members.reduce(
+          (sum, member) => {
+            return sum +
+              Number(
+                member.storedValue || 0
+              );
+          },
+          0
+        );
+
+      const totalSpend =
+        members.reduce(
+          (sum, member) => {
+            return sum +
+              Number(
+                member.totalSpend || 0
+              );
+          },
+          0
+        );
+
+      const newMembers =
+        members.filter((member) => {
+          const createdAt =
+            dashboardParseDate(
+              member.createdAt
+            );
+
+          return (
+            createdAt &&
+            createdAt >= start &&
+            createdAt <= end
+          );
+        });
+
+      const activeMembers =
+        new Set(
+          logs
+            .map((log) => {
+              return String(
+                log.memberId ||
+                log.memberDocumentId ||
+                ''
+              );
+            })
+            .filter(Boolean)
+        );
+
+      const memberMap =
+        new Map();
+
+      logs.forEach((log) => {
+        const memberId =
+          String(
+            log.memberId ||
+            log.memberDocumentId ||
+            '未知會員'
+          );
+
+        const current =
+          memberMap.get(memberId) || {
+            memberId,
+            displayName:
+              log.displayName ||
+              memberId,
+            deposit: 0,
+            usage: 0,
+            count: 0,
+          };
+
+        const amount =
+          Math.abs(
+            Number(log.amount || 0)
+          );
+
+        if (dashboardIsUsage(log)) {
+          current.usage += amount;
+        } else {
+          current.deposit += amount;
+        }
+
+        current.count += 1;
+
+        if (log.displayName) {
+          current.displayName =
+            log.displayName;
+        }
+
+        memberMap.set(
+          memberId,
+          current
+        );
+      });
+
+      const memberRows =
+        Array.from(
+          memberMap.values()
+        );
+
+      const topDeposits =
+        [...memberRows]
+          .filter(
+            (item) => item.deposit > 0
+          )
+          .sort(
+            (a, b) =>
+              b.deposit - a.deposit
+          )
+          .slice(0, 10);
+
+      const topUsages =
+        [...memberRows]
+          .filter(
+            (item) => item.usage > 0
+          )
+          .sort(
+            (a, b) =>
+              b.usage - a.usage
+          )
+          .slice(0, 10);
+
+      const topBalances =
+        [...members]
+          .sort((a, b) => {
+            return (
+              Number(
+                b.storedValue || 0
+              ) -
+              Number(
+                a.storedValue || 0
+              )
+            );
+          })
+          .slice(0, 10);
+
+      const storeMap =
+        new Map();
+
+      logs.forEach((log) => {
+        const storeName =
+          String(
+            log.storeName ||
+            '未記錄店別'
+          ).trim() ||
+          '未記錄店別';
+
+        const current =
+          storeMap.get(storeName) || {
+            storeName,
+            deposit: 0,
+            usage: 0,
+            count: 0,
+          };
+
+        const amount =
+          Math.abs(
+            Number(log.amount || 0)
+          );
+
+        if (dashboardIsUsage(log)) {
+          current.usage += amount;
+        } else {
+          current.deposit += amount;
+        }
+
+        current.count += 1;
+
+        storeMap.set(
+          storeName,
+          current
+        );
+      });
+
+      const stores =
+        Array.from(
+          storeMap.values()
+        )
+          .map((item) => ({
+            ...item,
+            net:
+              item.deposit -
+              item.usage,
+          }))
+          .sort((a, b) => {
+            return (
+              b.deposit -
+              a.deposit
+            );
+          });
+
+      const negativeMembers =
+        members.filter((member) => {
+          return (
+            Number(
+              member.storedValue || 0
+            ) < 0
+          );
+        });
+
+      const largeLogs =
+        logs.filter((log) => {
+          return (
+            Math.abs(
+              Number(log.amount || 0)
+            ) >= 5000
+          );
+        });
+
+      const missingStoreLogs =
+        logs.filter(
+          (log) => !log.storeName
+        );
+
+      const missingOperatorLogs =
+        logs.filter((log) => {
+          return !(
+            log.operatorEmail ||
+            log.staff
+          );
+        });
+
+      const brokenBalanceLogs =
+        logs.filter((log) => {
+          const before =
+            Number(
+              log.beforeStoredValue
+            );
+
+          const after =
+            Number(
+              log.afterStoredValue
+            );
+
+          const amount =
+            Number(log.amount);
+
+          if (
+            !Number.isFinite(before) ||
+            !Number.isFinite(after) ||
+            !Number.isFinite(amount)
+          ) {
+            return false;
+          }
+
+          return (
+            Math.abs(
+              before +
+              amount -
+              after
+            ) > 1
+          );
+        });
+
+      return {
+        members,
+        logs,
+        depositLogs,
+        usageLogs,
+        depositTotal,
+        usageTotal,
+        currentBalance,
+        totalSpend,
+        newMembers,
+        activeMembers,
+        topDeposits,
+        topUsages,
+        topBalances,
+        stores,
+        negativeMembers,
+        largeLogs,
+        missingStoreLogs,
+        missingOperatorLogs,
+        brokenBalanceLogs,
+      };
+    }
+
+    function dashboardKpi(
+      label,
+      value,
+      note = ''
+    ) {
+      return `
+        <div class="stat-card">
+          <div class="stat-label">
+            ${escapeHtml(label)}
+          </div>
+
+          <div class="stat-value">
+            ${value}
+          </div>
+
+          <div
+            class="muted"
+            style="margin-top:8px"
+          >
+            ${escapeHtml(note)}
+          </div>
+        </div>
+      `;
+    }
+
+    function dashboardRanking(
+      rows,
+      field,
+      emptyText
+    ) {
+      if (!rows.length) {
+        return `
+          <div
+            class="muted"
+            style="padding:28px;text-align:center"
+          >
+            ${escapeHtml(emptyText)}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="table-wrap">
+          <table style="min-width:520px">
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>會員</th>
+                <th>金額</th>
+                <th>筆數</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${rows.map(
+                (item, index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+
+                    <td>
+                      <div class="member-name">
+                        ${escapeHtml(
+                          item.displayName || ''
+                        )}
+                      </div>
+
+                      <div class="muted">
+                        ${escapeHtml(
+                          item.memberId || ''
+                        )}
+                      </div>
+                    </td>
+
+                    <td>
+                      <strong>
+                        ${dashboardMoney(
+                          item[field]
+                        )}
+                      </strong>
+                    </td>
+
+                    <td>
+                      ${money(
+                        item.count || 0
+                      )}
+                    </td>
+                  </tr>
+                `
+              ).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function dashboardBalanceRanking(
+      members
+    ) {
+      if (!members.length) {
+        return `
+          <div
+            class="muted"
+            style="padding:28px;text-align:center"
+          >
+            目前沒有會員資料
+          </div>
+        `;
+      }
+
+      return `
+        <div class="table-wrap">
+          <table style="min-width:560px">
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>會員</th>
+                <th>儲值金餘額</th>
+                <th>累積消費</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${members.map(
+                (member, index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+
+                    <td>
+                      <div class="member-name">
+                        ${escapeHtml(
+                          member.displayName ||
+                          ''
+                        )}
+                      </div>
+
+                      <div class="muted">
+                        ${escapeHtml(
+                          member.memberId ||
+                          member.barcodeValue ||
+                          ''
+                        )}
+                      </div>
+                    </td>
+
+                    <td>
+                      <strong>
+                        ${dashboardMoney(
+                          member.storedValue
+                        )}
+                      </strong>
+                    </td>
+
+                    <td>
+                      ${dashboardMoney(
+                        member.totalSpend
+                      )}
+                    </td>
+                  </tr>
+                `
+              ).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function dashboardStoreTable(
+      stores
+    ) {
+      if (!stores.length) {
+        return `
+          <div
+            class="muted"
+            style="padding:28px;text-align:center"
+          >
+            此區間沒有店別交易資料
+          </div>
+        `;
+      }
+
+      return `
+        <div class="table-wrap">
+          <table style="min-width:680px">
+            <thead>
+              <tr>
+                <th>店別</th>
+                <th>儲值</th>
+                <th>使用</th>
+                <th>淨流入</th>
+                <th>筆數</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${stores.map(
+                (item) => `
+                  <tr>
+                    <td>
+                      ${escapeHtml(
+                        item.storeName
+                      )}
+                    </td>
+
+                    <td>
+                      ${dashboardMoney(
+                        item.deposit
+                      )}
+                    </td>
+
+                    <td>
+                      ${dashboardMoney(
+                        item.usage
+                      )}
+                    </td>
+
+                    <td>
+                      ${
+                        item.net < 0
+                          ? '-'
+                          : ''
+                      }${dashboardMoney(
+                        Math.abs(item.net)
+                      )}
+                    </td>
+
+                    <td>
+                      ${money(item.count)}
+                    </td>
+                  </tr>
+                `
+              ).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function dashboardAlerts(
+      metrics
+    ) {
+      const alerts = [];
+
+      if (
+        metrics.negativeMembers.length
+      ) {
+        alerts.push(
+          `負數餘額會員：${metrics.negativeMembers.length} 位`
+        );
+      }
+
+      if (
+        metrics.brokenBalanceLogs.length
+      ) {
+        alerts.push(
+          `餘額前後不一致：${metrics.brokenBalanceLogs.length} 筆`
+        );
+      }
+
+      if (
+        metrics.largeLogs.length
+      ) {
+        alerts.push(
+          `單筆 5,000 元以上：${metrics.largeLogs.length} 筆`
+        );
+      }
+
+      if (
+        metrics.missingStoreLogs.length
+      ) {
+        alerts.push(
+          `缺少店別：${metrics.missingStoreLogs.length} 筆`
+        );
+      }
+
+      if (
+        metrics.missingOperatorLogs.length
+      ) {
+        alerts.push(
+          `缺少操作人員：${metrics.missingOperatorLogs.length} 筆`
+        );
+      }
+
+      if (!alerts.length) {
+        return `
+          <div
+            class="message show"
+            style="
+              background:#ecfdf5;
+              color:#166534;
+            "
+          >
+            ✅ 目前沒有明顯異常
+          </div>
+        `;
+      }
+
+      return alerts.map(
+        (alert) => `
+          <div
+            class="message show"
+            style="
+              display:block;
+              background:#fff7ed;
+              color:#9a3412;
+              margin-bottom:8px;
+            "
+          >
+            ⚠️ ${escapeHtml(alert)}
+          </div>
+        `
+      ).join('');
+    }
+
+    function exportDashboardCsv(
+      metrics
+    ) {
+      const rows = [
+        [
+          '時間',
+          '會員名稱',
+          '會員編號',
+          '類型',
+          '金額',
+          '異動前',
+          '異動後',
+          '付款方式',
+          '操作人員',
+          '店別',
+          '備註',
+        ],
+        ...metrics.logs.map(
+          (log) => [
+            formatAdminDateTime(
+              log.createdAt
+            ) || '',
+            log.displayName || '',
+            log.memberId || '',
+            log.type || '',
+            log.amount || 0,
+            log.beforeStoredValue ?? '',
+            log.afterStoredValue ?? '',
+            log.payMethod || '',
+            log.operatorEmail ||
+              log.staff ||
+              '',
+            log.storeName || '',
+            log.note || '',
+          ]
+        ),
+      ];
+
+      const csv =
+        '\ufeff' +
+        rows
+          .map((row) => {
+            return row
+              .map((value) => {
+                return (
+                  '"' +
+                  String(value ?? '')
+                    .replace(
+                      /"/g,
+                      '""'
+                    ) +
+                  '"'
+                );
+              })
+              .join(',');
+          })
+          .join('\n');
+
+      const blob =
+        new Blob(
+          [csv],
+          {
+            type:
+              'text/csv;charset=utf-8',
+          }
+        );
+
+      const url =
+        URL.createObjectURL(blob);
+
+      const link =
+        document.createElement('a');
+
+      link.href = url;
+
+      link.download =
+        '營運戰情室_' +
+        dashboardState.startDate +
+        '_' +
+        dashboardState.endDate +
+        '.csv';
+
+      document.body.appendChild(
+        link
+      );
+
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(url);
+    }
+
+    function renderDashboard() {
+      setTitle(
+        '營運戰情室',
+        'Firebase 會員、儲值金、使用與營運分析'
+      );
+
+      const page =
+        document.getElementById('page');
 
       if (!page) {
         return;
       }
 
+      if (
+        !dashboardState.startDate ||
+        !dashboardState.endDate
+      ) {
+        setDashboardDateRange(
+          'month'
+        );
+      }
+
       const paint = () => {
-        const members = state.members || [];
-        const walletLogs = state.walletLogs || [];
+        const metrics =
+          dashboardCalculate();
 
-        const totalMembers = members.length;
-        const totalStoredValue = members.reduce((sum, m) => sum + Number(m.storedValue || 0), 0);
-        const totalSpend = members.reduce((sum, m) => sum + Number(m.totalSpend || 0), 0);
+        const netFlow =
+          metrics.depositTotal -
+          metrics.usageTotal;
 
-        const todayText = getNowText().split(' ')[0];
+        const usageRate =
+          metrics.depositTotal > 0
+            ? (
+                metrics.usageTotal /
+                metrics.depositTotal *
+                100
+              ).toFixed(1)
+            : '0.0';
 
-        const todayWalletLogs = walletLogs.filter((log) => {
-          return String(formatAdminDateTime(log.createdAt) || '').startsWith(todayText);
-        });
+        const profile =
+          state.adminProfile || {};
 
-        const todayStoredIn = todayWalletLogs
-          .filter((log) => Number(log.amount || 0) > 0)
-          .reduce((sum, log) => sum + Number(log.amount || 0), 0);
-
-        const todayStoredOut = todayWalletLogs
-          .filter((log) => Number(log.amount || 0) < 0)
-          .reduce((sum, log) => sum + Math.abs(Number(log.amount || 0)), 0);
+        const currentStore =
+          profile.displayName ||
+          profile.storeName ||
+          '未設定店別';
 
         page.innerHTML = `
-          <div class="cards">
-            <div class="stat-card">
-              <div class="stat-label">會員總數</div>
-              <div class="stat-value">${money(totalMembers)}</div>
+          <div class="panel">
+            <h2 class="panel-title">
+              日期區間查詢
+            </h2>
+
+            <div
+              class="btn-row"
+              style="margin-bottom:14px"
+            >
+              ${[
+                ['today', '今日'],
+                ['yesterday', '昨天'],
+                ['7d', '近 7 天'],
+                ['30d', '近 30 天'],
+                ['month', '本月'],
+                ['lastMonth', '上月'],
+              ].map(
+                ([value, label]) => `
+                  <button
+                    type="button"
+                    class="btn ${
+                      dashboardState.range ===
+                      value
+                        ? ''
+                        : 'secondary'
+                    }"
+                    data-dashboard-range="${value}"
+                  >
+                    ${label}
+                  </button>
+                `
+              ).join('')}
             </div>
 
-            <div class="stat-card">
-              <div class="stat-label">儲值金總餘額</div>
-              <div class="stat-value">$${money(totalStoredValue)}</div>
+            <div class="form-grid">
+              <div class="form-row">
+                <label>
+                  開始日期
+                </label>
+
+                <input
+                  id="dashboardStartDate"
+                  type="date"
+                  value="${escapeHtml(
+                    dashboardState.startDate
+                  )}"
+                />
+              </div>
+
+              <div class="form-row">
+                <label>
+                  結束日期
+                </label>
+
+                <input
+                  id="dashboardEndDate"
+                  type="date"
+                  value="${escapeHtml(
+                    dashboardState.endDate
+                  )}"
+                />
+              </div>
             </div>
 
-            <div class="stat-card">
-              <div class="stat-label">會員累積消費</div>
-              <div class="stat-value">$${money(totalSpend)}</div>
-            </div>
+            <div class="btn-row">
+              <button
+                class="btn"
+                type="button"
+                id="dashboardSearchBtn"
+              >
+                查詢
+              </button>
 
-            <div class="stat-card">
-              <div class="stat-label">儲值紀錄總筆數</div>
-              <div class="stat-value">${money(walletLogs.length)}</div>
+              <button
+                class="btn secondary"
+                type="button"
+                id="dashboardExportBtn"
+              >
+                匯出 CSV
+              </button>
             </div>
           </div>
 
           <div class="cards">
-            <div class="stat-card">
-              <div class="stat-label">今日儲值</div>
-              <div class="stat-value">$${money(todayStoredIn)}</div>
+            ${dashboardKpi(
+              '目前會員總數',
+              money(
+                metrics.members.length
+              ),
+              `期間新增 ${money(
+                metrics.newMembers.length
+              )} 位`
+            )}
+
+            ${dashboardKpi(
+              '目前儲值金總餘額',
+              dashboardMoney(
+                metrics.currentBalance
+              ),
+              '所有會員尚未使用金額'
+            )}
+
+            ${dashboardKpi(
+              '期間儲值總額',
+              dashboardMoney(
+                metrics.depositTotal
+              ),
+              `${money(
+                metrics.depositLogs.length
+              )} 筆`
+            )}
+
+            ${dashboardKpi(
+              '期間使用總額',
+              dashboardMoney(
+                metrics.usageTotal
+              ),
+              `${money(
+                metrics.usageLogs.length
+              )} 筆`
+            )}
+          </div>
+
+          <div class="cards">
+            ${dashboardKpi(
+              '期間淨流入',
+              (
+                netFlow < 0
+                  ? '-'
+                  : ''
+              ) +
+              dashboardMoney(
+                Math.abs(netFlow)
+              ),
+              '儲值－使用'
+            )}
+
+            ${dashboardKpi(
+              '儲值金使用率',
+              usageRate + '%',
+              '期間使用 ÷ 期間儲值'
+            )}
+
+            ${dashboardKpi(
+              '期間交易會員',
+              money(
+                metrics.activeMembers.size
+              ),
+              `${money(
+                metrics.logs.length
+              )} 筆交易`
+            )}
+
+            ${dashboardKpi(
+              '目前店別',
+              escapeHtml(currentStore),
+              '取自 admins.displayName'
+            )}
+          </div>
+
+          <div class="grid-2">
+            <div class="panel">
+              <h2 class="panel-title">
+                期間儲值最多會員
+              </h2>
+
+              ${dashboardRanking(
+                metrics.topDeposits,
+                'deposit',
+                '此區間沒有儲值紀錄'
+              )}
             </div>
 
-            <div class="stat-card">
-              <div class="stat-label">今日使用儲值金</div>
-              <div class="stat-value">$${money(todayStoredOut)}</div>
+            <div class="panel">
+              <h2 class="panel-title">
+                營運異常提醒
+              </h2>
+
+              ${dashboardAlerts(
+                metrics
+              )}
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="panel">
+              <h2 class="panel-title">
+                期間使用最多會員
+              </h2>
+
+              ${dashboardRanking(
+                metrics.topUsages,
+                'usage',
+                '此區間沒有使用紀錄'
+              )}
             </div>
 
-            <div class="stat-card">
-              <div class="stat-label">今日儲值紀錄</div>
-              <div class="stat-value">${money(todayWalletLogs.length)}</div>
-            </div>
+            <div class="panel">
+              <h2 class="panel-title">
+                目前餘額最高會員
+              </h2>
 
-            <div class="stat-card">
-              <div class="stat-label">目前店別</div>
-              <div class="stat-value" style="font-size: 24px;">
-                ${escapeHtml((state.adminProfile && state.adminProfile.storeName) || '未設定')}
-              </div>
+              ${dashboardBalanceRanking(
+                metrics.topBalances
+              )}
             </div>
           </div>
 
           <div class="panel">
-            <h2 class="panel-title">快速入口</h2>
+            <h2 class="panel-title">
+              店別營運分析
+            </h2>
 
-            <div class="btn-row">
-              <button class="btn secondary" onclick="setPage('members')">查看會員清單</button>
-              <button class="btn secondary" onclick="setPage('wallet')">前往儲值頁面</button>
-              <button class="btn secondary" onclick="setPage('logs')">查看儲值紀錄</button>
-              <button class="btn secondary" onclick="setPage('broadcast')">發送訊息 / 優惠券</button>
+            ${dashboardStoreTable(
+              metrics.stores
+            )}
+          </div>
+
+          <div class="panel">
+            <h2 class="panel-title">
+              期間交易明細
+            </h2>
+
+            <div
+              class="muted"
+              style="margin-bottom:12px"
+            >
+              共 ${money(
+                metrics.logs.length
+              )} 筆
             </div>
+
+            ${renderWalletLogsTable(
+              [...metrics.logs].sort(
+                (a, b) => {
+                  return (
+                    (
+                      b.dashboardDate
+                        ?.getTime() ||
+                      0
+                    ) -
+                    (
+                      a.dashboardDate
+                        ?.getTime() ||
+                      0
+                    )
+                  );
+                }
+              )
+            )}
           </div>
         `;
+
+        document
+          .querySelectorAll(
+            '[data-dashboard-range]'
+          )
+          .forEach((button) => {
+            button.onclick = () => {
+              setDashboardDateRange(
+                button.dataset
+                  .dashboardRange
+              );
+
+              paint();
+            };
+          });
+
+        const searchButton =
+          document.getElementById(
+            'dashboardSearchBtn'
+          );
+
+        if (searchButton) {
+          searchButton.onclick = () => {
+            const startValue =
+              document.getElementById(
+                'dashboardStartDate'
+              ).value;
+
+            const endValue =
+              document.getElementById(
+                'dashboardEndDate'
+              ).value;
+
+            if (
+              !startValue ||
+              !endValue
+            ) {
+              alert(
+                '請選擇開始日期與結束日期'
+              );
+
+              return;
+            }
+
+            if (
+              startValue > endValue
+            ) {
+              alert(
+                '開始日期不可晚於結束日期'
+              );
+
+              return;
+            }
+
+            dashboardState.startDate =
+              startValue;
+
+            dashboardState.endDate =
+              endValue;
+
+            dashboardState.range =
+              'custom';
+
+            paint();
+          };
+        }
+
+        const exportButton =
+          document.getElementById(
+            'dashboardExportBtn'
+          );
+
+        if (exportButton) {
+          exportButton.onclick = () => {
+            exportDashboardCsv(
+              dashboardCalculate()
+            );
+          };
+        }
       };
 
       paint();
 
       api('getDashboard')
         .then((data) => {
-          state.members = normalizeMemberList(data.members);
-          state.pointLogs = data.pointLogs || [];
-          state.walletLogs = data.walletLogs || [];
-          paint();
+          state.members =
+            normalizeMemberList(
+              data.members
+            );
+
+          state.pointLogs =
+            data.pointLogs || [];
+
+          state.walletLogs =
+            data.walletLogs || [];
+
+          if (
+            state.page === 'dashboard'
+          ) {
+            paint();
+          }
         })
         .catch((err) => {
-          console.error('renderDashboard getDashboard failed', err);
+          console.error(
+            'renderDashboard getDashboard failed',
+            err
+          );
 
-          page.innerHTML += `
-            <div class="panel">
-              <h2 class="panel-title">資料載入失敗</h2>
-              <div class="message show">
-                ${escapeHtml(err.message || String(err))}
+          if (
+            state.page === 'dashboard'
+          ) {
+            page.innerHTML += `
+              <div class="panel">
+                <h2 class="panel-title">
+                  資料載入失敗
+                </h2>
+
+                <div class="message show">
+                  ${escapeHtml(
+                    err.message ||
+                    String(err)
+                  )}
+                </div>
               </div>
-            </div>
-          `;
+            `;
+          }
         });
     }
 
