@@ -3,87 +3,91 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /*
-     * 已登入
-     */
     function signedIn() {
       return request.auth != null;
     }
 
-    /*
-     * 使用 Firebase Authentication Custom Claims 判斷管理員。
-     * migration/create-admin.mjs 已設定：
-     * admin: true
-     * role: "admin"
-     */
-    function hasAdminClaim() {
-      return signedIn()
-        && request.auth.token.admin == true
-        && request.auth.token.role == "admin";
+    function adminPath() {
+      return /databases/$(database)/documents/admins/$(request.auth.uid);
     }
 
-    /*
-     * Firestore 管理員文件必須存在且 active=true。
-     * 防止僅靠舊 Token 或被停權管理員繼續操作。
-     */
-    function hasActiveAdminDocument() {
-      return signedIn()
-        && exists(
-          /databases/$(database)/documents/admins/$(request.auth.uid)
-        )
-        && get(
-          /databases/$(database)/documents/admins/$(request.auth.uid)
-        ).data.active == true
-        && get(
-          /databases/$(database)/documents/admins/$(request.auth.uid)
-        ).data.role == "admin";
+    function adminExists() {
+      return signedIn() && exists(adminPath());
     }
 
-    function isAdmin() {
-      return hasAdminClaim() && hasActiveAdminDocument();
+    function adminData() {
+      return get(adminPath()).data;
+    }
+
+    function isActiveAdmin() {
+      return adminExists()
+        && adminData().active == true
+        && (
+          adminData().role == 'admin'
+          || adminData().role == 'owner'
+        );
+    }
+
+    function immutableMemberFieldsUnchanged(documentId) {
+      return request.resource.data.memberId
+          == resource.data.memberId
+
+        && request.resource.data.lineUserId
+          == resource.data.lineUserId
+
+        && request.resource.data.barcodeValue
+          == resource.data.barcodeValue
+
+        && (
+          !resource.data.keys().hasAny(['lineUserId'])
+          || request.resource.data.lineUserId == documentId
+        );
     }
 
     /*
      * 管理員帳號
-     *
-     * 管理員可以讀取自己的管理員資料，
-     * 但不能從前端自己把 active、role 改掉。
      */
     match /admins/{adminUid} {
-      allow read: if isAdmin();
+      allow read: if isActiveAdmin();
 
+      /*
+       * 不允許從瀏覽器自行提升管理員權限。
+       */
       allow create, update, delete: if false;
     }
 
     /*
      * 會員主資料
-     *
-     * 文件 ID 是 lineUserId。
-     * 後台有效管理員可以讀取及修改所有會員資料。
-     *
-     * 不開放 delete，避免後台誤刪會員及關聯紀錄。
      */
-    match /members/{lineUserId} {
-      allow read: if isAdmin();
+    match /members/{memberDocumentId} {
+      allow read: if isActiveAdmin();
 
-      allow create: if isAdmin()
-        && request.resource.data.lineUserId == lineUserId;
+      allow create: if isActiveAdmin()
+        && request.resource.data.memberId is string
+        && request.resource.data.memberId.size() > 0
+        && (
+          !request.resource.data.keys().hasAny(['lineUserId'])
+          || request.resource.data.lineUserId == memberDocumentId
+        );
 
-      allow update: if isAdmin()
-        && request.resource.data.lineUserId == resource.data.lineUserId
-        && request.resource.data.lineUserId == lineUserId;
+      allow update: if isActiveAdmin()
+        && immutableMemberFieldsUnchanged(memberDocumentId);
 
       allow delete: if false;
     }
 
     /*
-     * 儲值紀錄
-     *
-     * 金額異動應新增紀錄，舊紀錄不應任意反向修改。
+     * 儲值金紀錄：
+     * 可以新增，不允許竄改既有歷史紀錄。
      */
     match /walletLogs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isAdmin();
+      allow read: if isActiveAdmin();
+
+      allow create: if isActiveAdmin()
+        && request.resource.data.operatorUid
+          == request.auth.uid
+        && request.resource.data.memberId is string;
+
       allow update, delete: if false;
     }
 
@@ -91,65 +95,66 @@ service cloud.firestore {
      * 點數紀錄
      */
     match /pointLogs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isAdmin();
+      allow read: if isActiveAdmin();
+
+      allow create: if isActiveAdmin()
+        && request.resource.data.operatorUid
+          == request.auth.uid
+        && request.resource.data.memberId is string;
+
       allow update, delete: if false;
     }
 
     /*
-     * 員工操作紀錄
+     * 會員資料修改紀錄
      */
-    match /staffLogs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isAdmin();
+    match /memberEditLogs/{logId} {
+      allow read: if isActiveAdmin();
+
+      allow create: if isActiveAdmin()
+        && request.resource.data.operatorUid
+          == request.auth.uid
+        && request.resource.data.memberId is string;
+
       allow update, delete: if false;
-    }
-
-    /*
-     * 發送紀錄與發送對象
-     */
-    match /broadcastLogs/{broadcastId} {
-      allow read, create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if false;
-    }
-
-    match /broadcastTargets/{targetId} {
-      allow read, create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if false;
     }
 
     /*
      * 優惠券
      */
     match /coupons/{couponId} {
-      allow read, create, update: if isAdmin();
+      allow read, create, update: if isActiveAdmin();
       allow delete: if false;
     }
 
     match /memberCoupons/{memberCouponId} {
-      allow read, create, update: if isAdmin();
+      allow read, create, update: if isActiveAdmin();
       allow delete: if false;
     }
 
     /*
-     * 活動
+     * 發送紀錄
+     */
+    match /broadcastLogs/{broadcastId} {
+      allow read, create, update: if isActiveAdmin();
+      allow delete: if false;
+    }
+
+    match /broadcastTargets/{targetId} {
+      allow read, create, update: if isActiveAdmin();
+      allow delete: if false;
+    }
+
+    /*
+     * 活動資料
      */
     match /activities/{activityId} {
-      allow read, create, update: if isAdmin();
+      allow read, create, update: if isActiveAdmin();
       allow delete: if false;
     }
 
     /*
-     * OTP 不應由後台瀏覽器直接讀取。
-     */
-    match /otps/{otpId} {
-      allow read, write: if false;
-    }
-
-    /*
-     * 未明確列出的集合全部拒絕。
+     * 其他未明確允許的資料全部拒絕。
      */
     match /{document=**} {
       allow read, write: if false;

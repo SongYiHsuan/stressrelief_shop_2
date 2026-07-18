@@ -862,6 +862,246 @@
     }
 
   
+
+    /* ===== 會員完整資料編輯視窗 ===== */
+
+    body.member-edit-open {
+      overflow: hidden !important;
+    }
+
+    .member-edit-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.64);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .member-edit-dialog {
+      width: min(820px, 100%);
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+    }
+
+    .member-edit-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 22px;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid #e5e7eb;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .member-edit-title {
+      margin: 0;
+      color: #111827;
+      font-size: 24px;
+      font-weight: 950;
+    }
+
+    .member-edit-subtitle {
+      margin-top: 5px;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.55;
+      word-break: break-all;
+    }
+
+    .member-edit-close {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 27px;
+      font-weight: 700;
+    }
+
+    .member-edit-body {
+      padding: 20px 22px 6px;
+    }
+
+    .member-edit-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .member-edit-grid .form-row {
+      margin-bottom: 0;
+    }
+
+    .member-edit-full {
+      grid-column: 1 / -1;
+    }
+
+    .member-edit-readonly {
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      cursor: not-allowed;
+    }
+
+    .member-edit-money {
+      position: relative;
+    }
+
+    .member-edit-money::before {
+      content: "$";
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      z-index: 2;
+      color: #64748b;
+      font-weight: 900;
+    }
+
+    .member-edit-money input {
+      padding-left: 30px;
+    }
+
+    .member-edit-hint {
+      margin-top: 5px;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .member-edit-warning {
+      grid-column: 1 / -1;
+      padding: 12px 14px;
+      border: 1px solid #fde68a;
+      border-radius: 13px;
+      background: #fffbeb;
+      color: #92400e;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.6;
+    }
+
+    .member-edit-message {
+      display: none;
+      margin: 16px 22px 0;
+      padding: 12px 14px;
+      border-radius: 13px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: 850;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .member-edit-message.show {
+      display: block;
+    }
+
+    .member-edit-actions {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 18px 22px 20px;
+      background: rgba(255, 255, 255, 0.97);
+      border-top: 1px solid #e5e7eb;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .member-edit-btn {
+      min-width: 108px;
+      padding: 12px 18px;
+      border-radius: 13px;
+      font-weight: 950;
+    }
+
+    .member-edit-btn.cancel {
+      background: #eef2f7;
+      color: #334155;
+    }
+
+    .member-edit-btn.save {
+      background: #111827;
+      color: #ffffff;
+    }
+
+    .member-edit-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .member-table-edit-btn {
+      padding: 8px 13px;
+      border-radius: 11px;
+      background: #111827;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .member-table-edit-btn:hover {
+      background: #334155;
+    }
+
+    @media (max-width: 720px) {
+      .member-edit-mask {
+        padding: 0;
+        align-items: flex-end;
+      }
+
+      .member-edit-dialog {
+        width: 100%;
+        max-height: 94vh;
+        border-radius: 22px 22px 0 0;
+      }
+
+      .member-edit-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .member-edit-full,
+      .member-edit-warning {
+        grid-column: auto;
+      }
+
+      .member-edit-header,
+      .member-edit-body,
+      .member-edit-actions {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .member-edit-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .member-edit-btn {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+
     /* ===== Firebase 後台登入 ===== */
 
     .admin-login-page {
@@ -1262,13 +1502,13 @@
     
 
     const firebaseConfig = {
-      apiKey: "AIzaSyBphOEvt7usGFUo-_iGxLHTxEi2hk2P8ZA",
-      authDomain: "stressrelief-f80e2.firebaseapp.com",
-      projectId: "stressrelief-f80e2",
-      storageBucket: "stressrelief-f80e2.firebasestorage.app",
-      messagingSenderId: "928737821222",
-      appId: "1:928737821222:web:7d1df952e6ad692891dce7",
-      measurementId: "G-M5LZD4R6TY"
+      apiKey: "AIzaSyD-yp_PGA5Fq1JOPafWxnc29sBlE0vv9Pk",
+      authDomain: "stressrelief2-f3345.firebaseapp.com",
+      projectId: "stressrelief2-f3345",
+      storageBucket: "stressrelief2-f3345.firebasestorage.app",
+      messagingSenderId: "448178166383",
+      appId: "1:448178166383:web:795a03a222569315c88b9a",
+      measurementId: "G-T8FD9PYNX7"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -1539,7 +1779,132 @@ const ADMIN_PIN = '9753';
     }
 
 
-    async function api(action, payload = {}) {
+    function firestoreValueToPlain(value) {
+      if (value === null || value === undefined) {
+        return value;
+      }
+
+      if (
+        value &&
+        typeof value.toDate === 'function'
+      ) {
+        return value.toDate().toISOString();
+      }
+
+      if (Array.isArray(value)) {
+        return value.map(firestoreValueToPlain);
+      }
+
+      if (
+        typeof value === 'object' &&
+        value.constructor === Object
+      ) {
+        const result = {};
+
+        Object.entries(value).forEach(([key, item]) => {
+          result[key] = firestoreValueToPlain(item);
+        });
+
+        return result;
+      }
+
+      return value;
+    }
+
+    function firestoreDocToPlain(doc) {
+      return {
+        _firestoreDocId: doc.id,
+        ...firestoreValueToPlain(doc.data() || {}),
+      };
+    }
+
+    function normalizeAdminMember(member) {
+      const source = member || {};
+
+      return {
+        ...source,
+        memberId:
+          String(
+            source.memberId ||
+            source._firestoreDocId ||
+            ''
+          ),
+        barcodeValue:
+          String(
+            source.barcodeValue ||
+            source.memberId ||
+            source._firestoreDocId ||
+            ''
+          ),
+        displayName:
+          String(source.displayName || ''),
+        phone:
+          source.phone === undefined ||
+          source.phone === null
+            ? ''
+            : String(source.phone),
+        level:
+          String(source.level || '一般會員'),
+        points:
+          Number(source.points || 0),
+        storedValue:
+          Number(source.storedValue || 0),
+        totalSpend:
+          Number(source.totalSpend || 0),
+        tags:
+          String(source.tags || ''),
+      };
+    }
+
+    async function getFirestoreCollectionRows(
+      collectionName,
+      orderField = '',
+      direction = 'desc'
+    ) {
+      let query = firebaseDb.collection(collectionName);
+
+      if (orderField) {
+        query = query.orderBy(orderField, direction);
+      }
+
+      const snapshot = await query.get();
+
+      return snapshot.docs.map(firestoreDocToPlain);
+    }
+
+    async function getAdminMembersFromFirestore() {
+      const rows =
+        await getFirestoreCollectionRows(
+          'members',
+          'createdAt',
+          'desc'
+        );
+
+      return rows.map(normalizeAdminMember);
+    }
+
+    async function getAdminLogsFromFirestore() {
+      const [pointLogs, walletLogs] =
+        await Promise.all([
+          getFirestoreCollectionRows(
+            'pointLogs',
+            'createdAt',
+            'desc'
+          ),
+          getFirestoreCollectionRows(
+            'walletLogs',
+            'createdAt',
+            'desc'
+          ),
+        ]);
+
+      return {
+        pointLogs,
+        walletLogs,
+      };
+    }
+
+    async function firebaseApi(action, payload = {}) {
       const user = firebaseAuth.currentUser;
 
       if (!user) {
@@ -1550,34 +1915,94 @@ const ADMIN_PIN = '9753';
         throw new Error('尚未取得後台帳號權限');
       }
 
-      if (!GAS_API_URL) {
-        throw new Error('尚未設定 GAS_API_URL');
+      switch (action) {
+        case 'getDashboard': {
+          const [members, logs] =
+            await Promise.all([
+              getAdminMembersFromFirestore(),
+              getAdminLogsFromFirestore(),
+            ]);
+
+          return {
+            members,
+            pointLogs: logs.pointLogs,
+            walletLogs: logs.walletLogs,
+          };
+        }
+
+        case 'getMembers': {
+          const members =
+            await getAdminMembersFromFirestore();
+
+          return {
+            members,
+          };
+        }
+
+        case 'getLogs': {
+          return await getAdminLogsFromFirestore();
+        }
+
+        case 'findMember': {
+          const keyword =
+            String(payload.keyword || '')
+              .trim()
+              .toLowerCase();
+
+          if (!keyword) {
+            throw new Error('請輸入會員資料');
+          }
+
+          const members =
+            await getAdminMembersFromFirestore();
+
+          const member = members.find((item) => {
+            const values = [
+              item.memberId,
+              item.barcodeValue,
+              item.phone,
+              item.displayName,
+            ].map((value) =>
+              String(value || '').toLowerCase()
+            );
+
+            return (
+              values[0] === keyword ||
+              values[1] === keyword ||
+              values[2] === keyword ||
+              values[3].includes(keyword)
+            );
+          });
+
+          if (!member) {
+            throw new Error('找不到會員');
+          }
+
+          return {
+            member,
+          };
+        }
+
+        default:
+          throw new Error(
+            action +
+            ' 尚未切換至 Firebase，為避免誤改資料已停止執行'
+          );
       }
+    }
 
-      const firebaseIdToken = await user.getIdToken();
-
-      const res = await fetch(GAS_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
-        },
-        body: JSON.stringify({
+    async function api(action, payload = {}) {
+      try {
+        return await firebaseApi(action, payload);
+      } catch (err) {
+        console.error(
+          'Firebase API failed:',
           action,
-          firebaseIdToken,
-          adminUid: user.uid,
-          adminEmail: user.email || '',
-          storeName: state.adminProfile.storeName || '',
-          ...payload,
-        }),
-      });
+          err
+        );
 
-      const json = await res.json();
-
-      if (!json.success) {
-        throw new Error(json.message || 'API 發生錯誤');
+        throw err;
       }
-
-      return json.data || {};
     }
 
     async function mockApi(action, payload) {
@@ -1999,10 +2424,10 @@ const ADMIN_PIN = '9753';
     }
 
     async function loadAdminProfile(user) {
-      const doc = await firebaseDb.collection('adminUsers').doc(user.uid).get();
+      const doc = await firebaseDb.collection('admins').doc(user.uid).get();
 
       if (!doc.exists) {
-        throw new Error('此帳號尚未建立後台權限：adminUsers/' + user.uid);
+        throw new Error('此帳號尚未建立後台權限：admins/' + user.uid);
       }
 
       const profile = doc.data() || {};
@@ -2012,7 +2437,7 @@ const ADMIN_PIN = '9753';
       }
 
       if (!profile.storeName) {
-        throw new Error('此後台帳號尚未設定店別');
+        profile.storeName = '解憂藥局';
       }
 
       return {
@@ -2438,6 +2863,1158 @@ const ADMIN_PIN = '9753';
       }
     }
 
+
+    function getMemberById(memberId) {
+      return state.members.find((member) => {
+        return String(member.memberId || '') === String(memberId || '');
+      }) || null;
+    }
+
+    function normalizeMemberNumber(value) {
+      const numberValue = Number(
+        String(value ?? '')
+          .replaceAll(',', '')
+          .replaceAll('$', '')
+          .trim()
+      );
+
+      return Number.isFinite(numberValue)
+        ? numberValue
+        : 0;
+    }
+
+    function toDateTimeLocalValue(value) {
+      if (!value) {
+        return '';
+      }
+
+      let date = null;
+
+      if (
+        value &&
+        typeof value === 'object' &&
+        typeof value.toDate === 'function'
+      ) {
+        date = value.toDate();
+      } else {
+        const raw = String(value).trim();
+
+        if (!raw) {
+          return '';
+        }
+
+        const parsed = new Date(
+          raw.includes('T')
+            ? raw
+            : raw.replace(/-/g, '/')
+        );
+
+        if (!Number.isNaN(parsed.getTime())) {
+          date = parsed;
+        }
+      }
+
+      if (!date || Number.isNaN(date.getTime())) {
+        return '';
+      }
+
+      const pad = (number) =>
+        String(number).padStart(2, '0');
+
+      return (
+        date.getFullYear() +
+        '-' +
+        pad(date.getMonth() + 1) +
+        '-' +
+        pad(date.getDate()) +
+        'T' +
+        pad(date.getHours()) +
+        ':' +
+        pad(date.getMinutes())
+      );
+    }
+
+    function toDateInputValue(value) {
+      if (!value) {
+        return '';
+      }
+
+      const dateTimeValue =
+        toDateTimeLocalValue(value);
+
+      if (dateTimeValue) {
+        return dateTimeValue.slice(0, 10);
+      }
+
+      const raw = String(value).trim();
+
+      const match = raw.match(
+        /^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/
+      );
+
+      if (!match) {
+        return '';
+      }
+
+      return [
+        match[1],
+        String(match[2]).padStart(2, '0'),
+        String(match[3]).padStart(2, '0'),
+      ].join('-');
+    }
+
+    function removeMemberEditDialog() {
+      const mask =
+        document.getElementById('memberEditMask');
+
+      if (mask) {
+        mask.remove();
+      }
+
+      document.body.classList.remove(
+        'member-edit-open'
+      );
+    }
+
+    function closeMemberEdit() {
+      removeMemberEditDialog();
+    }
+
+    function openMemberEdit(memberId) {
+      const member =
+        getMemberById(memberId);
+
+      if (!member) {
+        alert('找不到這位會員，請先重新整理會員清單');
+        return;
+      }
+
+      removeMemberEditDialog();
+
+      const mask =
+        document.createElement('div');
+
+      mask.id = 'memberEditMask';
+      mask.className = 'member-edit-mask';
+
+      const immutableDocumentId =
+        member.lineUserId ||
+        member.documentId ||
+        member.firebaseDocumentId ||
+        member.uid ||
+        '';
+
+      mask.innerHTML = `
+        <div
+          class="member-edit-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="memberEditTitle"
+        >
+          <div class="member-edit-header">
+            <div>
+              <h2
+                class="member-edit-title"
+                id="memberEditTitle"
+              >
+                編輯會員資料
+              </h2>
+
+              <div class="member-edit-subtitle">
+                ${escapeHtml(
+                  member.displayName ||
+                  member.memberId ||
+                  '會員'
+                )}
+              </div>
+            </div>
+
+            <button
+              class="member-edit-close"
+              id="memberEditCloseBtn"
+              type="button"
+              aria-label="關閉"
+            >
+              ×
+            </button>
+          </div>
+
+          <form id="memberEditForm">
+            <div class="member-edit-body">
+              <div class="member-edit-grid">
+                <div class="form-row">
+                  <label>會員編號</label>
+                  <input
+                    id="editMemberId"
+                    class="member-edit-readonly"
+                    value="${escapeHtml(member.memberId || '')}"
+                    readonly
+                  />
+                  <div class="member-edit-hint">
+                    會員編號不可修改，避免紀錄關聯中斷。
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>Firebase 文件編號／LINE User ID</label>
+                  <input
+                    id="editLineUserId"
+                    class="member-edit-readonly"
+                    value="${escapeHtml(immutableDocumentId)}"
+                    readonly
+                  />
+                  <div class="member-edit-hint">
+                    系統識別欄位不可修改。
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label>LINE 顯示名稱</label>
+                  <input
+                    id="editDisplayName"
+                    value="${escapeHtml(member.displayName || '')}"
+                    placeholder="會員名稱"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>真實姓名</label>
+                  <input
+                    id="editRealName"
+                    value="${escapeHtml(
+                      member.realName ||
+                      member.name ||
+                      ''
+                    )}"
+                    placeholder="會員真實姓名"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>電話</label>
+                  <input
+                    id="editPhone"
+                    value="${escapeHtml(member.phone || '')}"
+                    inputmode="tel"
+                    placeholder="0912345678"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>Email</label>
+                  <input
+                    id="editEmail"
+                    type="email"
+                    value="${escapeHtml(member.email || '')}"
+                    placeholder="member@example.com"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>會員等級</label>
+                  <select id="editLevel">
+                    <option
+                      value="一般會員"
+                      ${
+                        String(member.level || '一般會員') ===
+                        '一般會員'
+                          ? 'selected'
+                          : ''
+                      }
+                    >
+                      一般會員
+                    </option>
+
+                    <option
+                      value="VIP"
+                      ${
+                        String(member.level || '') ===
+                        'VIP'
+                          ? 'selected'
+                          : ''
+                      }
+                    >
+                      VIP
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <label>標籤</label>
+                  <input
+                    id="editTags"
+                    value="${escapeHtml(member.tags || '')}"
+                    placeholder="例如：VIP,常客"
+                  />
+                  <div class="member-edit-hint">
+                    多個標籤請用逗號分隔。
+                  </div>
+                </div>
+
+                <div class="form-row member-edit-money">
+                  <label>儲值金</label>
+                  <input
+                    id="editStoredValue"
+                    type="number"
+                    step="1"
+                    value="${escapeHtml(
+                      normalizeMemberNumber(
+                        member.storedValue
+                      )
+                    )}"
+                  />
+                </div>
+
+                <div class="form-row member-edit-money">
+                  <label>累積消費</label>
+                  <input
+                    id="editTotalSpend"
+                    type="number"
+                    step="1"
+                    value="${escapeHtml(
+                      normalizeMemberNumber(
+                        member.totalSpend
+                      )
+                    )}"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>剩餘點數</label>
+                  <input
+                    id="editPoints"
+                    type="number"
+                    step="1"
+                    value="${escapeHtml(
+                      normalizeMemberNumber(
+                        member.points ??
+                        member.pointBalance ??
+                        0
+                      )
+                    )}"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>手機驗證</label>
+                  <select id="editPhoneVerified">
+                    <option
+                      value="true"
+                      ${
+                        member.phoneVerified === true ||
+                        member.phoneVerified === 'true'
+                          ? 'selected'
+                          : ''
+                      }
+                    >
+                      已驗證
+                    </option>
+
+                    <option
+                      value="false"
+                      ${
+                        member.phoneVerified === true ||
+                        member.phoneVerified === 'true'
+                          ? ''
+                          : 'selected'
+                      }
+                    >
+                      未驗證
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <label>生日</label>
+                  <input
+                    id="editBirthday"
+                    type="date"
+                    value="${escapeHtml(
+                      toDateInputValue(member.birthday)
+                    )}"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>最後到訪</label>
+                  <input
+                    id="editLastVisitAt"
+                    type="datetime-local"
+                    value="${escapeHtml(
+                      toDateTimeLocalValue(
+                        member.lastVisitAt
+                      )
+                    )}"
+                  />
+                </div>
+
+                <div class="form-row member-edit-full">
+                  <label>備註</label>
+                  <textarea
+                    id="editNote"
+                    placeholder="會員備註"
+                  >${escapeHtml(
+                    member.note ||
+                    member.notes ||
+                    ''
+                  )}</textarea>
+                </div>
+
+                <div class="member-edit-warning">
+                  修改儲值金或點數時，系統會同步建立異動紀錄；
+                  會員編號、LINE User ID 與文件編號不允許修改。
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="member-edit-message"
+              id="memberEditMessage"
+            ></div>
+
+            <div class="member-edit-actions">
+              <button
+                class="member-edit-btn cancel"
+                id="cancelMemberEditBtn"
+                type="button"
+              >
+                取消
+              </button>
+
+              <button
+                class="member-edit-btn save"
+                id="saveMemberEditBtn"
+                type="submit"
+              >
+                儲存修改
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+
+      document.body.appendChild(mask);
+
+      document.body.classList.add(
+        'member-edit-open'
+      );
+
+      mask.addEventListener(
+        'click',
+        function (event) {
+          if (event.target === mask) {
+            closeMemberEdit();
+          }
+        }
+      );
+
+      document.getElementById(
+        'memberEditCloseBtn'
+      ).onclick = closeMemberEdit;
+
+      document.getElementById(
+        'cancelMemberEditBtn'
+      ).onclick = closeMemberEdit;
+
+      document.getElementById(
+        'memberEditForm'
+      ).onsubmit = async (event) => {
+        event.preventDefault();
+
+        await saveMemberEdit(member);
+      };
+    }
+
+    async function findMemberDocumentReference(member) {
+      const directDocumentId =
+        member.lineUserId ||
+        member.documentId ||
+        member.firebaseDocumentId ||
+        member.uid ||
+        '';
+
+      if (directDocumentId) {
+        const directRef =
+          firebaseDb
+            .collection('members')
+            .doc(String(directDocumentId));
+
+        const directSnapshot =
+          await directRef.get();
+
+        if (directSnapshot.exists) {
+          return {
+            ref: directRef,
+            snapshot: directSnapshot,
+          };
+        }
+      }
+
+      const memberId =
+        String(member.memberId || '').trim();
+
+      if (!memberId) {
+        throw new Error(
+          '會員缺少 memberId，無法定位 Firebase 文件'
+        );
+      }
+
+      const querySnapshot =
+        await firebaseDb
+          .collection('members')
+          .where('memberId', '==', memberId)
+          .limit(2)
+          .get();
+
+      if (querySnapshot.empty) {
+        throw new Error(
+          'Firebase members 集合找不到此會員'
+        );
+      }
+
+      if (querySnapshot.size > 1) {
+        throw new Error(
+          'Firebase 中有重複會員編號，請先整理重複資料'
+        );
+      }
+
+      const snapshot =
+        querySnapshot.docs[0];
+
+      return {
+        ref: snapshot.ref,
+        snapshot,
+      };
+    }
+
+    function getMemberEditFormValues() {
+      const phone = String(
+        document.getElementById('editPhone')?.value ||
+        ''
+      )
+        .replace(/[^0-9]/g, '')
+        .trim();
+
+      if (
+        phone &&
+        !/^09\d{8}$/.test(phone)
+      ) {
+        throw new Error(
+          '手機號碼格式錯誤，請輸入 09 開頭的 10 位數字'
+        );
+      }
+
+      const email = String(
+        document.getElementById('editEmail')?.value ||
+        ''
+      ).trim();
+
+      if (
+        email &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      ) {
+        throw new Error('Email 格式不正確');
+      }
+
+      const lastVisitInput =
+        document.getElementById(
+          'editLastVisitAt'
+        )?.value || '';
+
+      let lastVisitDate = null;
+
+      if (lastVisitInput) {
+        lastVisitDate =
+          new Date(lastVisitInput);
+
+        if (
+          Number.isNaN(
+            lastVisitDate.getTime()
+          )
+        ) {
+          throw new Error(
+            '最後到訪日期格式不正確'
+          );
+        }
+      }
+
+      return {
+        displayName: String(
+          document.getElementById(
+            'editDisplayName'
+          )?.value || ''
+        ).trim(),
+
+        realName: String(
+          document.getElementById(
+            'editRealName'
+          )?.value || ''
+        ).trim(),
+
+        phone,
+
+        email,
+
+        level: String(
+          document.getElementById(
+            'editLevel'
+          )?.value || '一般會員'
+        ).trim(),
+
+        tags: String(
+          document.getElementById(
+            'editTags'
+          )?.value || ''
+        )
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+          .join(','),
+
+        storedValue:
+          normalizeMemberNumber(
+            document.getElementById(
+              'editStoredValue'
+            )?.value
+          ),
+
+        totalSpend:
+          normalizeMemberNumber(
+            document.getElementById(
+              'editTotalSpend'
+            )?.value
+          ),
+
+        points:
+          normalizeMemberNumber(
+            document.getElementById(
+              'editPoints'
+            )?.value
+          ),
+
+        phoneVerified:
+          String(
+            document.getElementById(
+              'editPhoneVerified'
+            )?.value
+          ) === 'true',
+
+        birthday: String(
+          document.getElementById(
+            'editBirthday'
+          )?.value || ''
+        ).trim(),
+
+        lastVisitDate,
+
+        note: String(
+          document.getElementById(
+            'editNote'
+          )?.value || ''
+        ).trim(),
+      };
+    }
+
+    async function saveMemberEdit(originalMember) {
+      const saveBtn =
+        document.getElementById(
+          'saveMemberEditBtn'
+        );
+
+      const cancelBtn =
+        document.getElementById(
+          'cancelMemberEditBtn'
+        );
+
+      const message =
+        document.getElementById(
+          'memberEditMessage'
+        );
+
+      try {
+        const formValues =
+          getMemberEditFormValues();
+
+        if (!firebaseAuth.currentUser) {
+          throw new Error(
+            '管理員登入已過期，請重新登入'
+          );
+        }
+
+        if (!state.adminProfile) {
+          throw new Error(
+            '找不到管理員權限資料'
+          );
+        }
+
+        saveBtn.disabled = true;
+        cancelBtn.disabled = true;
+        saveBtn.textContent = '儲存中...';
+
+        message.classList.remove('show');
+        message.textContent = '';
+
+        const located =
+          await findMemberDocumentReference(
+            originalMember
+          );
+
+        const memberRef = located.ref;
+
+        const adminUser =
+          firebaseAuth.currentUser;
+
+        const adminEmail =
+          adminUser.email || '';
+
+        const adminUid =
+          adminUser.uid || '';
+
+        const storeName =
+          state.adminProfile.storeName || '';
+
+        const now =
+          firebase.firestore.FieldValue
+            .serverTimestamp();
+
+        let updatedMemberData = null;
+
+        await firebaseDb.runTransaction(
+          async (transaction) => {
+            const latestSnapshot =
+              await transaction.get(memberRef);
+
+            if (!latestSnapshot.exists) {
+              throw new Error(
+                '會員文件已不存在，請重新整理'
+              );
+            }
+
+            const latest =
+              latestSnapshot.data() || {};
+
+            const beforeStoredValue =
+              normalizeMemberNumber(
+                latest.storedValue
+              );
+
+            const beforePoints =
+              normalizeMemberNumber(
+                latest.points ??
+                latest.pointBalance ??
+                0
+              );
+
+            const updateData = {
+              displayName:
+                formValues.displayName,
+
+              realName:
+                formValues.realName,
+
+              name:
+                formValues.realName,
+
+              phone:
+                formValues.phone,
+
+              email:
+                formValues.email,
+
+              level:
+                formValues.level,
+
+              tags:
+                formValues.tags,
+
+              storedValue:
+                formValues.storedValue,
+
+              totalSpend:
+                formValues.totalSpend,
+
+              points:
+                formValues.points,
+
+              pointBalance:
+                formValues.points,
+
+              phoneVerified:
+                formValues.phoneVerified,
+
+              birthday:
+                formValues.birthday,
+
+              note:
+                formValues.note,
+
+              notes:
+                formValues.note,
+
+              updatedAt: now,
+
+              updatedBy: adminUid,
+
+              updatedByEmail:
+                adminEmail,
+
+              updatedStoreName:
+                storeName,
+            };
+
+            if (formValues.lastVisitDate) {
+              updateData.lastVisitAt =
+                firebase.firestore.Timestamp
+                  .fromDate(
+                    formValues.lastVisitDate
+                  );
+            } else {
+              updateData.lastVisitAt = null;
+            }
+
+            /*
+             * 特別注意：
+             * 不更新 lineUserId、memberId、barcodeValue，
+             * 避免會員與歷史紀錄失去關聯。
+             */
+            transaction.update(
+              memberRef,
+              updateData
+            );
+
+            const storedValueDifference =
+              formValues.storedValue -
+              beforeStoredValue;
+
+            if (storedValueDifference !== 0) {
+              const walletLogRef =
+                firebaseDb
+                  .collection('walletLogs')
+                  .doc();
+
+              transaction.set(
+                walletLogRef,
+                {
+                  logId:
+                    walletLogRef.id,
+
+                  memberDocumentId:
+                    memberRef.id,
+
+                  lineUserId:
+                    latest.lineUserId ||
+                    memberRef.id,
+
+                  memberId:
+                    latest.memberId ||
+                    originalMember.memberId ||
+                    '',
+
+                  displayName:
+                    formValues.displayName ||
+                    latest.displayName ||
+                    '',
+
+                  type:
+                    '後台調整',
+
+                  amount:
+                    storedValueDifference,
+
+                  beforeStoredValue,
+
+                  afterStoredValue:
+                    formValues.storedValue,
+
+                  payMethod:
+                    '後台修改',
+
+                  note:
+                    '會員資料編輯調整儲值金',
+
+                  operatorUid:
+                    adminUid,
+
+                  operatorEmail:
+                    adminEmail,
+
+                  staff:
+                    adminEmail,
+
+                  storeName,
+
+                  createdAt:
+                    now,
+                }
+              );
+            }
+
+            const pointsDifference =
+              formValues.points -
+              beforePoints;
+
+            if (pointsDifference !== 0) {
+              const pointLogRef =
+                firebaseDb
+                  .collection('pointLogs')
+                  .doc();
+
+              transaction.set(
+                pointLogRef,
+                {
+                  logId:
+                    pointLogRef.id,
+
+                  memberDocumentId:
+                    memberRef.id,
+
+                  lineUserId:
+                    latest.lineUserId ||
+                    memberRef.id,
+
+                  memberId:
+                    latest.memberId ||
+                    originalMember.memberId ||
+                    '',
+
+                  displayName:
+                    formValues.displayName ||
+                    latest.displayName ||
+                    '',
+
+                  type:
+                    '後台調整',
+
+                  points:
+                    pointsDifference,
+
+                  amount:
+                    pointsDifference,
+
+                  beforePoints,
+
+                  afterPoints:
+                    formValues.points,
+
+                  note:
+                    '會員資料編輯調整點數',
+
+                  operatorUid:
+                    adminUid,
+
+                  operatorEmail:
+                    adminEmail,
+
+                  staff:
+                    adminEmail,
+
+                  storeName,
+
+                  createdAt:
+                    now,
+                }
+              );
+            }
+
+            const editLogRef =
+              firebaseDb
+                .collection('memberEditLogs')
+                .doc();
+
+            transaction.set(
+              editLogRef,
+              {
+                logId:
+                  editLogRef.id,
+
+                memberDocumentId:
+                  memberRef.id,
+
+                lineUserId:
+                  latest.lineUserId ||
+                  memberRef.id,
+
+                memberId:
+                  latest.memberId ||
+                  originalMember.memberId ||
+                  '',
+
+                displayName:
+                  formValues.displayName ||
+                  latest.displayName ||
+                  '',
+
+                operatorUid:
+                  adminUid,
+
+                operatorEmail:
+                  adminEmail,
+
+                storeName,
+
+                before: {
+                  displayName:
+                    latest.displayName || '',
+
+                  realName:
+                    latest.realName ||
+                    latest.name ||
+                    '',
+
+                  phone:
+                    latest.phone || '',
+
+                  email:
+                    latest.email || '',
+
+                  level:
+                    latest.level || '',
+
+                  tags:
+                    latest.tags || '',
+
+                  storedValue:
+                    beforeStoredValue,
+
+                  totalSpend:
+                    normalizeMemberNumber(
+                      latest.totalSpend
+                    ),
+
+                  points:
+                    beforePoints,
+
+                  phoneVerified:
+                    latest.phoneVerified === true,
+
+                  birthday:
+                    latest.birthday || '',
+
+                  note:
+                    latest.note ||
+                    latest.notes ||
+                    '',
+                },
+
+                after: {
+                  displayName:
+                    formValues.displayName,
+
+                  realName:
+                    formValues.realName,
+
+                  phone:
+                    formValues.phone,
+
+                  email:
+                    formValues.email,
+
+                  level:
+                    formValues.level,
+
+                  tags:
+                    formValues.tags,
+
+                  storedValue:
+                    formValues.storedValue,
+
+                  totalSpend:
+                    formValues.totalSpend,
+
+                  points:
+                    formValues.points,
+
+                  phoneVerified:
+                    formValues.phoneVerified,
+
+                  birthday:
+                    formValues.birthday,
+
+                  note:
+                    formValues.note,
+                },
+
+                createdAt:
+                  now,
+              }
+            );
+
+            updatedMemberData = {
+              ...latest,
+              ...updateData,
+
+              documentId:
+                memberRef.id,
+
+              lineUserId:
+                latest.lineUserId ||
+                memberRef.id,
+
+              memberId:
+                latest.memberId ||
+                originalMember.memberId ||
+                '',
+
+              lastVisitAt:
+                formValues.lastVisitDate
+                  ? formValues.lastVisitDate
+                      .toISOString()
+                  : '',
+            };
+          }
+        );
+
+        state.members =
+          state.members.map((member) => {
+            if (
+              String(member.memberId || '') ===
+              String(
+                originalMember.memberId || ''
+              )
+            ) {
+              return {
+                ...member,
+                ...updatedMemberData,
+              };
+            }
+
+            return member;
+          });
+
+        closeMemberEdit();
+
+        if (state.page === 'members') {
+          renderMembers();
+        }
+
+        alert('會員資料已更新完成');
+      } catch (error) {
+        console.error(
+          'saveMemberEdit failed',
+          error
+        );
+
+        if (message) {
+          message.textContent =
+            error.message ||
+            String(error);
+
+          message.classList.add('show');
+        }
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent =
+            '儲存修改';
+        }
+
+        if (cancelBtn) {
+          cancelBtn.disabled = false;
+        }
+      }
+    }
+
+
     function renderMembersTable(list) {
       if (!list.length) {
         return `<div class="muted">目前沒有會員資料。</div>`;
@@ -2455,6 +4032,7 @@ const ADMIN_PIN = '9753';
                 <th>累積消費</th>
                 <th>標籤</th>
                 <th>最後到訪</th>
+                <th>編輯</th>
               </tr>
             </thead>
             <tbody>
@@ -2470,6 +4048,16 @@ const ADMIN_PIN = '9753';
                   <td>$${money(m.totalSpend)}</td>
                   <td>${renderMemberTagSelect(m)}</td>
                   <td>${escapeHtml(formatAdminDateTime(m.lastVisitAt) || '')}</td>
+                  <td>
+                    <button
+                      class="member-table-edit-btn"
+                      type="button"
+                      data-edit-member-id="${escapeHtml(m.memberId || '')}"
+                      onclick="openMemberEdit('${escapeHtml(m.memberId || '')}')"
+                    >
+                      編輯
+                    </button>
+                  </td>
                 </tr>
               `).join('')}
             </tbody>
