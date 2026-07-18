@@ -2143,6 +2143,147 @@ const ADMIN_PIN = '9753';
           };
         }
 
+        case 'previewBroadcast': {
+          const members =
+            await getAdminMembersFromFirestore();
+
+          const tag =
+            String(payload.tag || '')
+              .trim()
+              .toLowerCase();
+
+          const minStoredValue =
+            Number(
+              payload.minStoredValue || 0
+            );
+
+          const joinedAfterDate =
+            String(
+              payload.joinedAfterDate || ''
+            ).trim();
+
+          const hasStoredValue =
+            String(
+              payload.hasStoredValue || ''
+            ).trim();
+
+          const level =
+            String(
+              payload.level || ''
+            ).trim();
+
+          const filteredMembers =
+            members.filter((member) => {
+              /*
+               * 會員等級
+               */
+              if (
+                level &&
+                String(member.level || '') !==
+                  level
+              ) {
+                return false;
+              }
+
+              /*
+               * 會員標籤
+               */
+              if (tag) {
+                const memberTags =
+                  String(member.tags || '')
+                    .split(',')
+                    .map((item) =>
+                      item.trim().toLowerCase()
+                    )
+                    .filter(Boolean);
+
+                if (
+                  !memberTags.includes(tag)
+                ) {
+                  return false;
+                }
+              }
+
+              /*
+               * 最低儲值金
+               */
+              const storedValue =
+                Number(
+                  member.storedValue || 0
+                );
+
+              if (
+                Number.isFinite(
+                  minStoredValue
+                ) &&
+                minStoredValue > 0 &&
+                storedValue <
+                  minStoredValue
+              ) {
+                return false;
+              }
+
+              /*
+               * 儲值金條件
+               */
+              if (
+                hasStoredValue === 'yes' &&
+                storedValue <= 0
+              ) {
+                return false;
+              }
+
+              if (
+                hasStoredValue === 'no' &&
+                storedValue > 0
+              ) {
+                return false;
+              }
+
+              /*
+               * 此日期後加入
+               */
+              if (joinedAfterDate) {
+                const createdAt =
+                  String(
+                    member.createdAt || ''
+                  ).trim();
+
+                if (!createdAt) {
+                  return false;
+                }
+
+                const createdDate =
+                  createdAt.slice(0, 10);
+
+                if (
+                  createdDate <
+                  joinedAfterDate
+                ) {
+                  return false;
+                }
+              }
+
+              return true;
+            });
+
+          const previewId =
+            'preview_' +
+            Date.now() +
+            '_' +
+            Math.random()
+              .toString(36)
+              .slice(2, 10);
+
+          return {
+            previewId,
+            count:
+              filteredMembers.length,
+            members:
+              filteredMembers,
+          };
+        }
+
         case 'getLogs': {
           return await getAdminLogsFromFirestore();
         }
