@@ -1419,6 +1419,358 @@
       margin-bottom: 22px !important;
     }
 
+  
+
+    /* ===== TeamHub 風格：營運戰情室（只影響 dashboard） ===== */
+    .dashboard-shell {
+      --dash-ink: #20302b;
+      --dash-muted: #72807a;
+      --dash-line: #e4ebe7;
+      --dash-green: #4d927d;
+      --dash-green-dark: #315f52;
+      --dash-mint: #b8d4ca;
+      --dash-lime: #d6e6bd;
+      --dash-sand: #ddd3b8;
+      --dash-rose: #d8b9b5;
+      --dash-surface: #ffffff;
+      --dash-soft: #f5f8f6;
+      color: var(--dash-ink);
+      display: grid;
+      gap: 16px;
+    }
+
+    .dashboard-shell * { box-sizing: border-box; }
+
+    .dashboard-toolbar,
+    .dashboard-card {
+      background: var(--dash-surface);
+      border: 1px solid var(--dash-line);
+      border-radius: 22px;
+      box-shadow: 0 12px 34px rgba(32, 48, 43, 0.055);
+    }
+
+    .dashboard-toolbar {
+      padding: 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-range-group {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-range-btn {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: #f2f5f3;
+      color: #5e6e67;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .dashboard-range-btn.active {
+      background: var(--dash-green-dark);
+      color: #fff;
+    }
+
+    .dashboard-date-controls {
+      display: flex;
+      align-items: flex-end;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-date-field {
+      display: grid;
+      gap: 5px;
+    }
+
+    .dashboard-date-field label {
+      color: var(--dash-muted);
+      font-size: 11px;
+      letter-spacing: .04em;
+    }
+
+    .dashboard-date-field input {
+      width: 148px;
+      padding: 9px 10px;
+      border-radius: 11px;
+      border-color: var(--dash-line);
+      background: var(--dash-soft);
+      color: var(--dash-ink);
+    }
+
+    .dashboard-action-btn {
+      min-height: 39px;
+      padding: 9px 13px;
+      border-radius: 11px;
+      background: var(--dash-green-dark);
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .dashboard-action-btn.secondary {
+      background: #edf2ef;
+      color: var(--dash-ink);
+    }
+
+    .dashboard-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .dashboard-kpi {
+      min-height: 128px;
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid var(--dash-line);
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dashboard-kpi::after {
+      content: '';
+      position: absolute;
+      width: 84px;
+      height: 84px;
+      right: -28px;
+      top: -28px;
+      border-radius: 50%;
+      background: var(--kpi-tint, var(--dash-lime));
+      opacity: .52;
+    }
+
+    .dashboard-kpi-label {
+      color: var(--dash-muted);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 11px;
+    }
+
+    .dashboard-kpi-value {
+      font-size: clamp(24px, 2.2vw, 34px);
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: -.035em;
+      position: relative;
+      z-index: 1;
+      word-break: break-word;
+    }
+
+    .dashboard-kpi-note {
+      margin-top: 10px;
+      color: var(--dash-muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .dashboard-kpi-note.good { color: var(--dash-green-dark); }
+    .dashboard-kpi-note.warn { color: #8c6048; }
+
+    .dashboard-grid-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(280px, .75fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .dashboard-grid-equal {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .dashboard-card { padding: 17px; min-width: 0; }
+
+    .dashboard-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .dashboard-card-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 950;
+      letter-spacing: -.015em;
+    }
+
+    .dashboard-card-subtitle {
+      color: var(--dash-muted);
+      font-size: 12px;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .dashboard-chip {
+      flex: 0 0 auto;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: var(--dash-soft);
+      color: var(--dash-muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .dashboard-chart-wrap {
+      width: 100%;
+      min-height: 260px;
+      overflow: hidden;
+    }
+
+    .dashboard-chart-svg {
+      width: 100%;
+      height: 260px;
+      display: block;
+      overflow: visible;
+    }
+
+    .dashboard-chart-grid { stroke: #e8eeea; stroke-width: 1; }
+    .dashboard-chart-deposit { fill: none; stroke: #4d927d; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .dashboard-chart-usage { fill: none; stroke: #b99b73; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .dashboard-chart-area { fill: rgba(77, 146, 125, .10); }
+    .dashboard-chart-dot-deposit { fill: #4d927d; }
+    .dashboard-chart-dot-usage { fill: #b99b73; }
+    .dashboard-chart-label { fill: #7b8882; font-size: 10px; font-weight: 700; }
+
+    .dashboard-legend {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      color: var(--dash-muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .dashboard-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dashboard-legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+
+    .dashboard-donut-layout {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 16px;
+      align-items: center;
+      min-height: 220px;
+    }
+
+    .dashboard-donut {
+      width: 148px;
+      height: 148px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .dashboard-donut::before {
+      content: '';
+      width: 94px;
+      height: 94px;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      box-shadow: inset 0 0 0 1px var(--dash-line);
+    }
+
+    .dashboard-donut-center {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      font-weight: 950;
+      font-size: 22px;
+    }
+
+    .dashboard-donut-center small {
+      display: block;
+      margin-top: 4px;
+      color: var(--dash-muted);
+      font-size: 10px;
+      font-weight: 850;
+    }
+
+    .dashboard-mix-list { display: grid; gap: 11px; }
+    .dashboard-mix-row { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; align-items: center; font-size: 12px; }
+    .dashboard-mix-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .dashboard-mix-label { color: var(--dash-muted); font-weight: 850; }
+    .dashboard-mix-value { color: var(--dash-ink); font-weight: 950; }
+
+    .dashboard-bars { display: grid; gap: 12px; }
+    .dashboard-bar-row { display: grid; gap: 6px; }
+    .dashboard-bar-meta { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
+    .dashboard-bar-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; }
+    .dashboard-bar-value { flex: 0 0 auto; color: var(--dash-muted); font-weight: 900; }
+    .dashboard-bar-track { height: 8px; border-radius: 999px; background: #edf2ef; overflow: hidden; }
+    .dashboard-bar-fill { height: 100%; border-radius: inherit; background: var(--dash-green); min-width: 2px; }
+
+    .dashboard-segments { display: grid; gap: 13px; }
+    .dashboard-segment-row { display: grid; gap: 6px; }
+    .dashboard-segment-head { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 900; }
+    .dashboard-segment-head span:last-child { color: var(--dash-muted); }
+    .dashboard-segment-track { height: 11px; border-radius: 999px; background: #edf2ef; overflow: hidden; }
+    .dashboard-segment-fill { height: 100%; border-radius: inherit; }
+
+    .dashboard-alerts { display: grid; gap: 9px; }
+    .dashboard-alert {
+      padding: 11px 12px;
+      border-radius: 13px;
+      border: 1px solid var(--dash-line);
+      background: var(--dash-soft);
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 9px;
+      align-items: start;
+    }
+    .dashboard-alert-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; background: #fff; }
+    .dashboard-alert-title { font-size: 12px; font-weight: 950; }
+    .dashboard-alert-text { margin-top: 3px; color: var(--dash-muted); font-size: 11px; line-height: 1.5; font-weight: 750; }
+
+    .dashboard-table-card .table-wrap { border-color: var(--dash-line); box-shadow: none; }
+    .dashboard-table-card th { background: var(--dash-soft); }
+
+    .dashboard-empty {
+      min-height: 150px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--dash-muted);
+      font-weight: 850;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1120px) {
+      .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .dashboard-grid-main { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .dashboard-toolbar { align-items: stretch; }
+      .dashboard-date-controls { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+      .dashboard-date-field input { width: 100%; }
+      .dashboard-action-btn { width: 100%; }
+      .dashboard-grid-equal { grid-template-columns: 1fr; }
+      .dashboard-donut-layout { grid-template-columns: 1fr; justify-items: center; }
+    }
+
+    @media (max-width: 520px) {
+      .dashboard-kpis { grid-template-columns: 1fr; }
+      .dashboard-range-group { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+      .dashboard-range-btn { padding-left: 7px; padding-right: 7px; }
+      .dashboard-date-controls { grid-template-columns: 1fr; }
+      .dashboard-card { padding: 14px; border-radius: 18px; }
+      .dashboard-chart-svg { height: 230px; }
+    }
+
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -4328,434 +4680,257 @@ const ADMIN_PIN = '9753';
       URL.revokeObjectURL(url);
     }
 
+    function dashboardEscapeAttr(value) {
+      return escapeHtml(String(value == null ? '' : value));
+    }
+
+    function dashboardBuildTrend(metrics) {
+      const rows = new Map();
+      const start = new Date(dashboardState.startDate + 'T00:00:00');
+      const end = new Date(dashboardState.endDate + 'T00:00:00');
+
+      for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+        const key = dashboardDateValue(cursor);
+        rows.set(key, { key, label: `${cursor.getMonth() + 1}/${cursor.getDate()}`, deposit: 0, usage: 0 });
+      }
+
+      (metrics.logs || []).forEach((log) => {
+        const date = log.dashboardDate || dashboardParseDate(log.createdAt);
+        if (!date) return;
+        const key = dashboardDateValue(date);
+        if (!rows.has(key)) return;
+        const item = rows.get(key);
+        const amount = Math.abs(Number(log.amount || 0));
+        if (dashboardIsUsage(log)) item.usage += amount;
+        else item.deposit += amount;
+      });
+
+      let list = Array.from(rows.values());
+      if (list.length > 31) {
+        const grouped = [];
+        for (let i = 0; i < list.length; i += 7) {
+          const chunk = list.slice(i, i + 7);
+          grouped.push({
+            key: chunk[0].key,
+            label: chunk[0].label,
+            deposit: chunk.reduce((sum, item) => sum + item.deposit, 0),
+            usage: chunk.reduce((sum, item) => sum + item.usage, 0),
+          });
+        }
+        list = grouped;
+      }
+      return list;
+    }
+
+    function dashboardTrendChart(metrics) {
+      const data = dashboardBuildTrend(metrics);
+      if (!data.length) return '<div class="dashboard-empty">此區間沒有可繪製資料</div>';
+
+      const width = 720;
+      const height = 250;
+      const left = 44;
+      const right = 14;
+      const top = 18;
+      const bottom = 32;
+      const plotW = width - left - right;
+      const plotH = height - top - bottom;
+      const maxValue = Math.max(1, ...data.flatMap((item) => [item.deposit, item.usage]));
+      const x = (index) => left + (data.length === 1 ? plotW / 2 : index * plotW / (data.length - 1));
+      const y = (value) => top + plotH - value / maxValue * plotH;
+      const points = (key) => data.map((item, index) => `${x(index).toFixed(1)},${y(item[key]).toFixed(1)}`).join(' ');
+      const areaPoints = `${left},${top + plotH} ${points('deposit')} ${left + plotW},${top + plotH}`;
+      const grid = [0, .25, .5, .75, 1].map((ratio) => {
+        const gy = top + plotH - ratio * plotH;
+        return `<line class="dashboard-chart-grid" x1="${left}" x2="${left + plotW}" y1="${gy}" y2="${gy}" />
+          <text class="dashboard-chart-label" x="${left - 7}" y="${gy + 3}" text-anchor="end">${money(Math.round(maxValue * ratio))}</text>`;
+      }).join('');
+      const labelStep = Math.max(1, Math.ceil(data.length / 7));
+      const labels = data.map((item, index) => index % labelStep === 0 || index === data.length - 1
+        ? `<text class="dashboard-chart-label" x="${x(index)}" y="${height - 7}" text-anchor="middle">${dashboardEscapeAttr(item.label)}</text>`
+        : '').join('');
+      const depositDots = data.map((item, index) => `<circle class="dashboard-chart-dot-deposit" cx="${x(index)}" cy="${y(item.deposit)}" r="3"><title>${dashboardEscapeAttr(item.label)} 儲值 ${dashboardMoney(item.deposit)}</title></circle>`).join('');
+      const usageDots = data.map((item, index) => `<circle class="dashboard-chart-dot-usage" cx="${x(index)}" cy="${y(item.usage)}" r="3"><title>${dashboardEscapeAttr(item.label)} 使用 ${dashboardMoney(item.usage)}</title></circle>`).join('');
+
+      return `<div class="dashboard-chart-wrap">
+        <svg class="dashboard-chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="每日儲值與使用趨勢">
+          ${grid}
+          <polygon class="dashboard-chart-area" points="${areaPoints}" />
+          <polyline class="dashboard-chart-deposit" points="${points('deposit')}" />
+          <polyline class="dashboard-chart-usage" points="${points('usage')}" />
+          ${depositDots}${usageDots}${labels}
+        </svg>
+        <div class="dashboard-legend">
+          <span><i style="background:#4d927d"></i>儲值</span>
+          <span><i style="background:#b99b73"></i>使用</span>
+        </div>
+      </div>`;
+    }
+
+    function dashboardMixChart(metrics) {
+      const deposit = Number(metrics.depositTotal || 0);
+      const usage = Number(metrics.usageTotal || 0);
+      const total = deposit + usage;
+      const depositPct = total > 0 ? deposit / total * 100 : 50;
+      const usagePct = total > 0 ? usage / total * 100 : 50;
+      const gradient = total > 0
+        ? `conic-gradient(#4d927d 0 ${depositPct}%, #c8ad84 ${depositPct}% 100%)`
+        : 'conic-gradient(#e7ece9 0 100%)';
+
+      return `<div class="dashboard-donut-layout">
+        <div class="dashboard-donut" style="background:${gradient}">
+          <div class="dashboard-donut-center">${money(metrics.logs.length)}<small>交易筆數</small></div>
+        </div>
+        <div class="dashboard-mix-list">
+          <div class="dashboard-mix-row"><i class="dashboard-mix-dot" style="background:#4d927d"></i><span class="dashboard-mix-label">儲值占比</span><span class="dashboard-mix-value">${depositPct.toFixed(1)}%</span></div>
+          <div class="dashboard-mix-row"><i class="dashboard-mix-dot" style="background:#c8ad84"></i><span class="dashboard-mix-label">使用占比</span><span class="dashboard-mix-value">${usagePct.toFixed(1)}%</span></div>
+          <div class="dashboard-mix-row"><i class="dashboard-mix-dot" style="background:#b8d4ca"></i><span class="dashboard-mix-label">交易會員</span><span class="dashboard-mix-value">${money(metrics.activeMembers.size)} 位</span></div>
+          <div class="dashboard-mix-row"><i class="dashboard-mix-dot" style="background:#ddd3b8"></i><span class="dashboard-mix-label">平均單筆儲值</span><span class="dashboard-mix-value">${metrics.depositLogs.length ? dashboardMoney(metrics.depositTotal / metrics.depositLogs.length) : '$0'}</span></div>
+        </div>
+      </div>`;
+    }
+
+    function dashboardTopBars(rows, key, emptyText) {
+      const list = (rows || []).slice(0, 6);
+      if (!list.length) return `<div class="dashboard-empty">${escapeHtml(emptyText)}</div>`;
+      const maxValue = Math.max(1, ...list.map((row) => Number(row[key] || 0)));
+      return `<div class="dashboard-bars">${list.map((row) => {
+        const value = Number(row[key] || 0);
+        const pct = Math.max(2, value / maxValue * 100);
+        return `<div class="dashboard-bar-row">
+          <div class="dashboard-bar-meta"><span class="dashboard-bar-name">${escapeHtml(row.displayName || row.memberId || '未命名會員')}</span><span class="dashboard-bar-value">${dashboardMoney(value)}</span></div>
+          <div class="dashboard-bar-track"><div class="dashboard-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('')}</div>`;
+    }
+
+    function dashboardBalanceSegments(metrics) {
+      const segments = [
+        { label: '$0', test: (v) => v <= 0, color: '#d5ddd9' },
+        { label: '$1–499', test: (v) => v > 0 && v < 500, color: '#b8d4ca' },
+        { label: '$500–999', test: (v) => v >= 500 && v < 1000, color: '#91b8aa' },
+        { label: '$1,000 以上', test: (v) => v >= 1000, color: '#4d927d' },
+      ].map((segment) => ({
+        ...segment,
+        count: metrics.members.filter((member) => segment.test(Number(member.storedValue || 0))).length,
+      }));
+      const total = Math.max(1, metrics.members.length);
+      return `<div class="dashboard-segments">${segments.map((segment) => {
+        const pct = segment.count / total * 100;
+        return `<div class="dashboard-segment-row">
+          <div class="dashboard-segment-head"><span>${segment.label}</span><span>${money(segment.count)} 位・${pct.toFixed(1)}%</span></div>
+          <div class="dashboard-segment-track"><div class="dashboard-segment-fill" style="width:${pct}%;background:${segment.color}"></div></div>
+        </div>`;
+      }).join('')}</div>`;
+    }
+
+    function dashboardAlertCards(metrics) {
+      const net = metrics.depositTotal - metrics.usageTotal;
+      const zeroBalance = metrics.members.filter((member) => Number(member.storedValue || 0) <= 0).length;
+      const highBalance = metrics.members.filter((member) => Number(member.storedValue || 0) >= 3000).length;
+      const inactive = metrics.members.filter((member) => {
+        const date = dashboardParseDate(member.lastVisitAt);
+        return date && (Date.now() - date.getTime()) > 30 * 86400000;
+      }).length;
+      const cards = [
+        { icon: net >= 0 ? '↗' : '↘', title: net >= 0 ? '期間資金為淨流入' : '期間使用高於儲值', text: `淨額 ${net < 0 ? '-' : ''}${dashboardMoney(Math.abs(net))}` },
+        { icon: '○', title: '零餘額會員', text: `${money(zeroBalance)} 位，可作為再次儲值推播名單` },
+        { icon: '◆', title: '高餘額會員', text: `${money(highBalance)} 位會員餘額達 $3,000 以上` },
+        { icon: '◷', title: '超過 30 天未回訪', text: `${money(inactive)} 位（依最後到店時間判斷）` },
+      ];
+      return `<div class="dashboard-alerts">${cards.map((card) => `<div class="dashboard-alert"><div class="dashboard-alert-icon">${card.icon}</div><div><div class="dashboard-alert-title">${escapeHtml(card.title)}</div><div class="dashboard-alert-text">${escapeHtml(card.text)}</div></div></div>`).join('')}</div>`;
+    }
+
     function renderDashboard() {
-      setTitle(
-        '營運戰情室',
-        'Firebase 會員、儲值金、使用與營運分析'
-      );
-
-      const page =
-        document.getElementById('page');
-
-      if (!page) {
-        return;
-      }
-
-      if (
-        !dashboardState.startDate ||
-        !dashboardState.endDate
-      ) {
-        setDashboardDateRange(
-          'month'
-        );
-      }
+      setTitle('營運戰情室', '會員儲值、使用趨勢與營運重點');
+      const page = document.getElementById('page');
+      if (!page) return;
+      if (!dashboardState.startDate || !dashboardState.endDate) setDashboardDateRange('month');
 
       const paint = () => {
-        const metrics =
-          dashboardCalculate();
+        const metrics = dashboardCalculate();
+        const netFlow = metrics.depositTotal - metrics.usageTotal;
+        const usageRate = metrics.depositTotal > 0 ? metrics.usageTotal / metrics.depositTotal * 100 : 0;
+        const profile = state.adminProfile || {};
+        const currentStore = profile.displayName || profile.storeName || '未設定店別';
+        const rangeButtons = [['today','今日'],['yesterday','昨天'],['7d','近 7 天'],['30d','近 30 天'],['month','本月'],['lastMonth','上月']];
 
-        const netFlow =
-          metrics.depositTotal -
-          metrics.usageTotal;
-
-        const usageRate =
-          metrics.depositTotal > 0
-            ? (
-                metrics.usageTotal /
-                metrics.depositTotal *
-                100
-              ).toFixed(1)
-            : '0.0';
-
-        const profile =
-          state.adminProfile || {};
-
-        const currentStore =
-          profile.displayName ||
-          profile.storeName ||
-          '未設定店別';
-
-        page.innerHTML = `
-          <div class="panel">
-            <h2 class="panel-title">
-              日期區間查詢
-            </h2>
-
-            <div
-              class="btn-row"
-              style="margin-bottom:14px"
-            >
-              ${[
-                ['today', '今日'],
-                ['yesterday', '昨天'],
-                ['7d', '近 7 天'],
-                ['30d', '近 30 天'],
-                ['month', '本月'],
-                ['lastMonth', '上月'],
-              ].map(
-                ([value, label]) => `
-                  <button
-                    type="button"
-                    class="btn ${
-                      dashboardState.range ===
-                      value
-                        ? ''
-                        : 'secondary'
-                    }"
-                    data-dashboard-range="${value}"
-                  >
-                    ${label}
-                  </button>
-                `
-              ).join('')}
+        page.innerHTML = `<div class="dashboard-shell">
+          <section class="dashboard-toolbar">
+            <div class="dashboard-range-group">
+              ${rangeButtons.map(([value,label]) => `<button type="button" class="dashboard-range-btn ${dashboardState.range === value ? 'active' : ''}" data-dashboard-range="${value}">${label}</button>`).join('')}
             </div>
-
-            <div class="form-grid">
-              <div class="form-row">
-                <label>
-                  開始日期
-                </label>
-
-                <input
-                  id="dashboardStartDate"
-                  type="date"
-                  value="${escapeHtml(
-                    dashboardState.startDate
-                  )}"
-                />
-              </div>
-
-              <div class="form-row">
-                <label>
-                  結束日期
-                </label>
-
-                <input
-                  id="dashboardEndDate"
-                  type="date"
-                  value="${escapeHtml(
-                    dashboardState.endDate
-                  )}"
-                />
-              </div>
+            <div class="dashboard-date-controls">
+              <div class="dashboard-date-field"><label>開始日期</label><input id="dashboardStartDate" type="date" value="${dashboardEscapeAttr(dashboardState.startDate)}"></div>
+              <div class="dashboard-date-field"><label>結束日期</label><input id="dashboardEndDate" type="date" value="${dashboardEscapeAttr(dashboardState.endDate)}"></div>
+              <button class="dashboard-action-btn" id="dashboardSearchBtn" type="button">套用</button>
+              <button class="dashboard-action-btn secondary" id="dashboardExportBtn" type="button">匯出 CSV</button>
             </div>
+          </section>
 
-            <div class="btn-row">
-              <button
-                class="btn"
-                type="button"
-                id="dashboardSearchBtn"
-              >
-                查詢
-              </button>
+          <section class="dashboard-kpis">
+            <article class="dashboard-kpi" style="--kpi-tint:#d6e6bd"><div class="dashboard-kpi-label">會員總數</div><div class="dashboard-kpi-value">${money(metrics.members.length)}</div><div class="dashboard-kpi-note good">期間新增 ${money(metrics.newMembers.length)} 位</div></article>
+            <article class="dashboard-kpi" style="--kpi-tint:#b8d4ca"><div class="dashboard-kpi-label">目前儲值金餘額</div><div class="dashboard-kpi-value">${dashboardMoney(metrics.currentBalance)}</div><div class="dashboard-kpi-note">會員尚未使用總額</div></article>
+            <article class="dashboard-kpi" style="--kpi-tint:#d8cdb1"><div class="dashboard-kpi-label">期間儲值</div><div class="dashboard-kpi-value">${dashboardMoney(metrics.depositTotal)}</div><div class="dashboard-kpi-note good">${money(metrics.depositLogs.length)} 筆入金</div></article>
+            <article class="dashboard-kpi" style="--kpi-tint:#d8b9b5"><div class="dashboard-kpi-label">期間使用</div><div class="dashboard-kpi-value">${dashboardMoney(metrics.usageTotal)}</div><div class="dashboard-kpi-note warn">使用率 ${usageRate.toFixed(1)}%</div></article>
+          </section>
 
-              <button
-                class="btn secondary"
-                type="button"
-                id="dashboardExportBtn"
-              >
-                匯出 CSV
-              </button>
-            </div>
-          </div>
+          <section class="dashboard-grid-main">
+            <article class="dashboard-card">
+              <div class="dashboard-card-head"><div><h2 class="dashboard-card-title">儲值與使用趨勢</h2><div class="dashboard-card-subtitle">依日期觀察現金流變化，超過 31 天會自動改為每週彙總</div></div><span class="dashboard-chip">淨流入 ${netFlow < 0 ? '-' : ''}${dashboardMoney(Math.abs(netFlow))}</span></div>
+              ${dashboardTrendChart(metrics)}
+            </article>
+            <article class="dashboard-card">
+              <div class="dashboard-card-head"><div><h2 class="dashboard-card-title">交易組成</h2><div class="dashboard-card-subtitle">儲值與使用的金額占比</div></div><span class="dashboard-chip">${escapeHtml(currentStore)}</span></div>
+              ${dashboardMixChart(metrics)}
+            </article>
+          </section>
 
-          <div class="cards">
-            ${dashboardKpi(
-              '目前會員總數',
-              money(
-                metrics.members.length
-              ),
-              `期間新增 ${money(
-                metrics.newMembers.length
-              )} 位`
-            )}
+          <section class="dashboard-grid-equal">
+            <article class="dashboard-card"><div class="dashboard-card-head"><div><h2 class="dashboard-card-title">儲值排行</h2><div class="dashboard-card-subtitle">找出期間內高貢獻會員</div></div><span class="dashboard-chip">Top 6</span></div>${dashboardTopBars(metrics.topDeposits, 'deposit', '此區間沒有儲值紀錄')}</article>
+            <article class="dashboard-card"><div class="dashboard-card-head"><div><h2 class="dashboard-card-title">會員餘額分布</h2><div class="dashboard-card-subtitle">用於規劃再儲值與高餘額會員活動</div></div><span class="dashboard-chip">${money(metrics.members.length)} 位</span></div>${dashboardBalanceSegments(metrics)}</article>
+          </section>
 
-            ${dashboardKpi(
-              '目前儲值金總餘額',
-              dashboardMoney(
-                metrics.currentBalance
-              ),
-              '所有會員尚未使用金額'
-            )}
+          <section class="dashboard-grid-equal">
+            <article class="dashboard-card"><div class="dashboard-card-head"><div><h2 class="dashboard-card-title">營運提醒</h2><div class="dashboard-card-subtitle">從現有會員與交易資料自動整理</div></div></div>${dashboardAlertCards(metrics)}</article>
+            <article class="dashboard-card"><div class="dashboard-card-head"><div><h2 class="dashboard-card-title">使用排行</h2><div class="dashboard-card-subtitle">辨識近期高活躍會員</div></div><span class="dashboard-chip">Top 6</span></div>${dashboardTopBars(metrics.topUsages, 'usage', '此區間沒有使用紀錄')}</article>
+          </section>
 
-            ${dashboardKpi(
-              '期間儲值總額',
-              dashboardMoney(
-                metrics.depositTotal
-              ),
-              `${money(
-                metrics.depositLogs.length
-              )} 筆`
-            )}
+          <section class="dashboard-card dashboard-table-card"><div class="dashboard-card-head"><div><h2 class="dashboard-card-title">店別營運分析</h2><div class="dashboard-card-subtitle">比較各店儲值、使用與淨額</div></div></div>${dashboardStoreTable(metrics.stores)}</section>
+          <section class="dashboard-card dashboard-table-card"><div class="dashboard-card-head"><div><h2 class="dashboard-card-title">期間交易明細</h2><div class="dashboard-card-subtitle">共 ${money(metrics.logs.length)} 筆，依時間由新到舊</div></div></div>${renderWalletLogsTable([...metrics.logs].sort((a,b) => (b.dashboardDate?.getTime() || 0) - (a.dashboardDate?.getTime() || 0)))}</section>
+        </div>`;
 
-            ${dashboardKpi(
-              '期間使用總額',
-              dashboardMoney(
-                metrics.usageTotal
-              ),
-              `${money(
-                metrics.usageLogs.length
-              )} 筆`
-            )}
-          </div>
+        document.querySelectorAll('[data-dashboard-range]').forEach((button) => {
+          button.onclick = () => { setDashboardDateRange(button.dataset.dashboardRange); paint(); };
+        });
 
-          <div class="cards">
-            ${dashboardKpi(
-              '期間淨流入',
-              (
-                netFlow < 0
-                  ? '-'
-                  : ''
-              ) +
-              dashboardMoney(
-                Math.abs(netFlow)
-              ),
-              '儲值－使用'
-            )}
+        const searchButton = document.getElementById('dashboardSearchBtn');
+        if (searchButton) searchButton.onclick = () => {
+          const startValue = document.getElementById('dashboardStartDate').value;
+          const endValue = document.getElementById('dashboardEndDate').value;
+          if (!startValue || !endValue) return alert('請選擇開始日期與結束日期');
+          if (startValue > endValue) return alert('開始日期不可晚於結束日期');
+          dashboardState.startDate = startValue;
+          dashboardState.endDate = endValue;
+          dashboardState.range = 'custom';
+          paint();
+        };
 
-            ${dashboardKpi(
-              '儲值金使用率',
-              usageRate + '%',
-              '期間使用 ÷ 期間儲值'
-            )}
-
-            ${dashboardKpi(
-              '期間交易會員',
-              money(
-                metrics.activeMembers.size
-              ),
-              `${money(
-                metrics.logs.length
-              )} 筆交易`
-            )}
-
-            ${dashboardKpi(
-              '目前店別',
-              escapeHtml(currentStore),
-              '取自 admins.displayName'
-            )}
-          </div>
-
-          <div class="grid-2">
-            <div class="panel">
-              <h2 class="panel-title">
-                期間儲值最多會員
-              </h2>
-
-              ${dashboardRanking(
-                metrics.topDeposits,
-                'deposit',
-                '此區間沒有儲值紀錄'
-              )}
-            </div>
-
-            <div class="panel">
-              <h2 class="panel-title">
-                營運異常提醒
-              </h2>
-
-              ${dashboardAlerts(
-                metrics
-              )}
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="panel">
-              <h2 class="panel-title">
-                期間使用最多會員
-              </h2>
-
-              ${dashboardRanking(
-                metrics.topUsages,
-                'usage',
-                '此區間沒有使用紀錄'
-              )}
-            </div>
-
-            <div class="panel">
-              <h2 class="panel-title">
-                目前餘額最高會員
-              </h2>
-
-              ${dashboardBalanceRanking(
-                metrics.topBalances
-              )}
-            </div>
-          </div>
-
-          <div class="panel">
-            <h2 class="panel-title">
-              店別營運分析
-            </h2>
-
-            ${dashboardStoreTable(
-              metrics.stores
-            )}
-          </div>
-
-          <div class="panel">
-            <h2 class="panel-title">
-              期間交易明細
-            </h2>
-
-            <div
-              class="muted"
-              style="margin-bottom:12px"
-            >
-              共 ${money(
-                metrics.logs.length
-              )} 筆
-            </div>
-
-            ${renderWalletLogsTable(
-              [...metrics.logs].sort(
-                (a, b) => {
-                  return (
-                    (
-                      b.dashboardDate
-                        ?.getTime() ||
-                      0
-                    ) -
-                    (
-                      a.dashboardDate
-                        ?.getTime() ||
-                      0
-                    )
-                  );
-                }
-              )
-            )}
-          </div>
-        `;
-
-        document
-          .querySelectorAll(
-            '[data-dashboard-range]'
-          )
-          .forEach((button) => {
-            button.onclick = () => {
-              setDashboardDateRange(
-                button.dataset
-                  .dashboardRange
-              );
-
-              paint();
-            };
-          });
-
-        const searchButton =
-          document.getElementById(
-            'dashboardSearchBtn'
-          );
-
-        if (searchButton) {
-          searchButton.onclick = () => {
-            const startValue =
-              document.getElementById(
-                'dashboardStartDate'
-              ).value;
-
-            const endValue =
-              document.getElementById(
-                'dashboardEndDate'
-              ).value;
-
-            if (
-              !startValue ||
-              !endValue
-            ) {
-              alert(
-                '請選擇開始日期與結束日期'
-              );
-
-              return;
-            }
-
-            if (
-              startValue > endValue
-            ) {
-              alert(
-                '開始日期不可晚於結束日期'
-              );
-
-              return;
-            }
-
-            dashboardState.startDate =
-              startValue;
-
-            dashboardState.endDate =
-              endValue;
-
-            dashboardState.range =
-              'custom';
-
-            paint();
-          };
-        }
-
-        const exportButton =
-          document.getElementById(
-            'dashboardExportBtn'
-          );
-
-        if (exportButton) {
-          exportButton.onclick = () => {
-            exportDashboardCsv(
-              dashboardCalculate()
-            );
-          };
-        }
+        const exportButton = document.getElementById('dashboardExportBtn');
+        if (exportButton) exportButton.onclick = () => exportDashboardCsv(dashboardCalculate());
       };
 
       paint();
-
-      api('getDashboard')
-        .then((data) => {
-          state.members =
-            normalizeMemberList(
-              data.members
-            );
-
-          state.pointLogs =
-            data.pointLogs || [];
-
-          state.walletLogs =
-            data.walletLogs || [];
-
-          if (
-            state.page === 'dashboard'
-          ) {
-            paint();
-          }
-        })
-        .catch((err) => {
-          console.error(
-            'renderDashboard getDashboard failed',
-            err
-          );
-
-          if (
-            state.page === 'dashboard'
-          ) {
-            page.innerHTML += `
-              <div class="panel">
-                <h2 class="panel-title">
-                  資料載入失敗
-                </h2>
-
-                <div class="message show">
-                  ${escapeHtml(
-                    err.message ||
-                    String(err)
-                  )}
-                </div>
-              </div>
-            `;
-          }
-        });
+      api('getDashboard').then((data) => {
+        state.members = normalizeMemberList(data.members);
+        state.pointLogs = data.pointLogs || [];
+        state.walletLogs = data.walletLogs || [];
+        if (state.page === 'dashboard') paint();
+      }).catch((err) => {
+        console.error('renderDashboard getDashboard failed', err);
+        if (state.page === 'dashboard') page.insertAdjacentHTML('beforeend', `<div class="dashboard-card"><div class="message show">${escapeHtml(err.message || String(err))}</div></div>`);
+      });
     }
+
 
     function renderMembers() {
       setTitle('會員清單', '查詢會員資料、儲值金與標籤');
