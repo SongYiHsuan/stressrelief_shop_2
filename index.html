@@ -2994,8 +2994,7 @@ const ADMIN_PIN = '9753';
               user.email || '',
 
             storeName:
-              state.adminProfile.storeName ||
-              '',
+              getCurrentAdminStoreName(),
 
             createdAt:
               serverTimestamp,
@@ -3549,6 +3548,25 @@ const ADMIN_PIN = '9753';
       };
     }
 
+    /**
+     * 統一取得目前登入帳號所屬店別。
+     *
+     * 右上角顯示名稱與所有操作紀錄都必須使用相同來源：
+     * 1. admins/{uid}.displayName
+     * 2. admins/{uid}.storeName
+     */
+    function getCurrentAdminStoreName() {
+      const profile =
+        state.adminProfile || {};
+
+      return String(
+        profile.displayName ||
+        profile.storeName ||
+        ''
+      ).trim();
+    }
+
+
     function renderAdminAuthBadge() {
       const actions = document.querySelector('.topbar-actions');
 
@@ -3575,8 +3593,7 @@ const ADMIN_PIN = '9753';
       const user = state.adminUser || firebaseAuth.currentUser || {};
       const profile = state.adminProfile || {};
       const displayName =
-        profile.displayName ||
-        profile.storeName ||
+        getCurrentAdminStoreName() ||
         '未設定店別';
 
       const email =
