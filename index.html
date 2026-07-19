@@ -7976,6 +7976,132 @@ const ADMIN_PIN = '9753';
       refreshAllAdminData();
     });
 
+
+
+    /* ===== 網站版本自動更新 ===== */
+    const ADMIN_VERSION_STORAGE_KEY =
+      'stressrelief_shop_current_version';
+
+    let adminVersionChecking = false;
+
+    async function checkAdminWebsiteVersion() {
+      if (adminVersionChecking) {
+        return;
+      }
+
+      adminVersionChecking = true;
+
+      try {
+        const response = await fetch(
+          './version.json?_=' + Date.now(),
+          {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json();
+
+        const latestVersion = String(
+          data.version || ''
+        ).trim();
+
+        if (!latestVersion) {
+          return;
+        }
+
+        const currentVersion =
+          localStorage.getItem(
+            ADMIN_VERSION_STORAGE_KEY
+          );
+
+        /*
+         * 第一次開啟只記錄版本，
+         * 不重新整理。
+         */
+        if (!currentVersion) {
+          localStorage.setItem(
+            ADMIN_VERSION_STORAGE_KEY,
+            latestVersion
+          );
+
+          return;
+        }
+
+        /*
+         * 發現新版後，先記錄新版本，
+         * 再用帶版本參數的網址強制重新載入。
+         */
+        if (currentVersion !== latestVersion) {
+          localStorage.setItem(
+            ADMIN_VERSION_STORAGE_KEY,
+            latestVersion
+          );
+
+          const url =
+            new URL(window.location.href);
+
+          url.searchParams.set(
+            '_appVersion',
+            latestVersion
+          );
+
+          window.location.replace(
+            url.toString()
+          );
+        }
+      } catch (error) {
+        console.warn(
+          '檢查網站版本失敗：',
+          error
+        );
+      } finally {
+        adminVersionChecking = false;
+      }
+    }
+
+    /*
+     * 網頁載入時立即檢查一次。
+     */
+    window.addEventListener(
+      'load',
+      function () {
+        window.setTimeout(
+          checkAdminWebsiteVersion,
+          1500
+        );
+      }
+    );
+
+    /*
+     * 每 60 秒檢查一次。
+     */
+    window.setInterval(
+      checkAdminWebsiteVersion,
+      60000
+    );
+
+    /*
+     * 使用者切回此分頁時也立即檢查。
+     */
+    document.addEventListener(
+      'visibilitychange',
+      function () {
+        if (
+          document.visibilityState ===
+          'visible'
+        ) {
+          checkAdminWebsiteVersion();
+        }
+      }
+    );
+
 </script>
 </body>
 </html>
