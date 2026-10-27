@@ -2760,20 +2760,54 @@ const ADMIN_PIN = '9753';
               return true;
             });
 
-          const previewId =
-            'preview_' +
-            Date.now() +
-            '_' +
-            Math.random()
-              .toString(36)
-              .slice(2, 10);
-
+          // STEP8N_SERVER_VERIFIED_PREVIEW
+          // 網頁保留原本計算與顯示，發送憑證只能來自 Firebase 後端。
+          const reply = await firebaseFunctions
+            .httpsCallable('previewBroadcast')(payload);
+          const verified = reply && reply.data;
+          if (!verified || !verified.previewId ||
+              !Array.isArray(verified.members) ||
+              Number(verified.count) !== verified.members.length ||
+              verified.members.length !== filteredMembers.length) {
+            throw new Error('後端預覽憑證或人數異常，禁止發送');
+          }
+          const normalizeId = member =>
+            String(member.lineUserId || '').trim();
+          const localById = new Map();
+          const remoteById = new Map();
+          for (const member of filteredMembers) {
+            const id = normalizeId(member);
+            if (!id || localById.has(id))
+              throw new Error('本地 LINE ID 缺少或重複，禁止發送');
+            localById.set(id, Number(member.totalSpend));
+          }
+          for (const member of verified.members) {
+            const id = normalizeId(member);
+            if (!id || remoteById.has(id))
+              throw new Error('後端 LINE ID 缺少或重複，禁止發送');
+            remoteById.set(id, Number(member.totalSpend));
+          }
+          if (localById.size !== remoteById.size ||
+              [...localById.keys()].some(id => !remoteById.has(id))) {
+            throw new Error('前後端會員名單不一致，禁止發送');
+          }
+          // 後端在未指定消費門檻時不計算使用額，故只比對 LINE ID。
+          // 有設定門檻時，必須連每人的消費額都一致。
+          if (hasTotalSpend !== '') {
+            for (const [id, amount] of localById) {
+              const serverAmount = remoteById.get(id);
+              if (!Number.isFinite(amount) ||
+                  !Number.isFinite(serverAmount) ||
+                  Math.abs(amount - serverAmount) > 0.001) {
+                throw new Error('前後端累積消費金額不同，禁止發送');
+              }
+            }
+          }
           return {
-            previewId,
-            count:
-              filteredMembers.length,
-            members:
-              filteredMembers,
+            previewId: verified.previewId,
+            count: filteredMembers.length,
+            members: filteredMembers,
+            serverVerified: true
           };
         }
 
@@ -2822,11 +2856,10 @@ const ADMIN_PIN = '9753';
         }
 
         case 'sendBroadcast': {
-          // STEP8I_BROWSER_ONLY_PREVIEW
-          // 預覽模式禁止從本網頁呼叫 LINE 群發。
-          throw new Error(
-            '目前僅開放預覽名單，正式 LINE 群發已停用。'
-          );
+          // STEP8N_SERVER_CALLABLE_SEND
+          const reply = await firebaseFunctions
+            .httpsCallable('sendBroadcast')(payload);
+          return reply.data || {};
         }
 
         default:
@@ -7379,18 +7412,27 @@ const ADMIN_PIN = '9753';
 
           setBroadcastFieldVisibility(type);
           updatePreview();
+          invalidateBroadcastPreview();
         };
       });
 
       ['sendTitle', 'sendContent', 'sendImageUrl', 'sendActionUrl', 'sendButtonLabel', 'couponAmount', 'couponStartDate', 'couponEndDate'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) {
-          el.addEventListener('input', updatePreview);
+          el.addEventListener('input', () => { updatePreview(); invalidateBroadcastPreview(); });
+          el.addEventListener('change', () => { updatePreview(); invalidateBroadcastPreview(); });
         }
       });
 
       document.getElementById('previewBroadcastBtn').onclick = async () => {
         const payload = getBroadcastPayload();
+        state.broadcastPreviewId = '';
+        state.broadcastPreviewMemberIds = [];
+        state.broadcastPreviewCount = 0;
+        state.broadcastVerifiedPayload = '';
+        state.broadcastPreviewAt = 0;
+        const pendingSend = document.getElementById('sendBroadcastBtn');
+        if (pendingSend) pendingSend.disabled = true;
         payload.hasTotalSpend =
           document.getElementById('filterTotalSpend').value;
         const btn = document.getElementById('previewBroadcastBtn');
@@ -7429,21 +7471,23 @@ const ADMIN_PIN = '9753';
           state.broadcastPreviewMemberIds = previewIds;
           state.broadcastPreviewId = data.previewId;
           state.broadcastPreviewCount = Number(data.count || 0);
+          state.broadcastVerifiedPayload = JSON.stringify(payload);
+          state.broadcastPreviewAt = Date.now();
 
           const sendBtn =
             document.getElementById('sendBroadcastBtn');
 
           if (sendBtn) {
-            sendBtn.disabled = true;
-            sendBtn.title = '預覽測試模式：正式群發已停用';
-            sendBtn.title = '預覽模式：正式群發已停用';
+            sendBtn.disabled = !(data.serverVerified === true && Number(data.count) > 0);
+
+            sendBtn.title = sendBtn.disabled ? '尚未通過驗證' : '名單已通過後端驗證';
           }
 
           showMessage(
             'broadcastMsg',
             '符合條件會員：' +
               data.count +
-              ' 人。目前為預覽測試模式，正式群發已停用。'
+              ' 人。已核對 Firebase 後端名單，可以正式發送。'
           );
 
           if (previewEl) {
@@ -7467,6 +7511,8 @@ const ADMIN_PIN = '9753';
             sendBtn.disabled = true;
           }
 
+          state.broadcastVerifiedPayload = '';
+          state.broadcastPreviewAt = 0;
           showMessage('broadcastMsg', err.message || String(err));
         } finally {
           btn.disabled = false;
@@ -7476,18 +7522,6 @@ const ADMIN_PIN = '9753';
       };
 
       document.getElementById('sendBroadcastBtn').onclick = async () => {
-        // STEP8I_PREVIEW_ONLY
-        const previewOnlyMode = true;
-
-        if (previewOnlyMode) {
-          showMessage(
-            'broadcastMsg',
-            '目前僅開放預覽名單，正式群發已停用。'
-          );
-          return;
-        }
-
-
         const payload = getBroadcastPayload();
         payload.hasTotalSpend =
           document.getElementById('filterTotalSpend').value;
@@ -7510,6 +7544,31 @@ const ADMIN_PIN = '9753';
           return;
         }
 
+        // 對比「預覽當下」和「即將發送」的內容、篩選條件。
+        const count = Number(state.broadcastPreviewCount || 0);
+        const ids = state.broadcastPreviewMemberIds || [];
+        const fresh = Date.now() - Number(state.broadcastPreviewAt || 0);
+        const comparePayload = { ...payload };
+        delete comparePayload.previewId;
+        delete comparePayload.previewMemberIds;
+        if (JSON.stringify(comparePayload) !== state.broadcastVerifiedPayload ||
+            !Array.isArray(ids) || ids.length !== count ||
+            count < 1 || new Set(ids).size !== count ||
+            !state.broadcastPreviewId ||
+            fresh < 0 || fresh > 8 * 60 * 1000) {
+          invalidateBroadcastPreview();
+          showMessage('broadcastMsg', '預覽已過期或內容有變更，請重新預覽。');
+          return;
+        }
+        const confirmText = '發送 ' + count;
+        const typed = window.prompt(
+          '即將正式向 ' + count + ' 位會員發送 LINE 訊息。\n' +
+          '此操作會實際發送，不能撤回。\n\n' +
+          '請輸入：' + confirmText,
+          ''
+        );
+        if (typed !== confirmText) return;
+
         const btn = document.getElementById('sendBroadcastBtn');
         const oldText = btn.textContent;
 
@@ -7523,6 +7582,8 @@ const ADMIN_PIN = '9753';
           state.broadcastPreviewId = '';
           state.broadcastPreviewMemberIds = [];
           state.broadcastPreviewCount = 0;
+          state.broadcastVerifiedPayload = '';
+          state.broadcastPreviewAt = 0;
 
           showMessage(
             'broadcastMsg',
@@ -7541,9 +7602,14 @@ const ADMIN_PIN = '9753';
 
           refreshAllAdminData();
         } catch (err) {
-          showMessage('broadcastMsg', err.message || String(err));
+          state.broadcastPreviewId = '';
+          state.broadcastPreviewMemberIds = [];
+          state.broadcastPreviewCount = 0;
+          state.broadcastVerifiedPayload = '';
+          state.broadcastPreviewAt = 0;
+          showMessage('broadcastMsg', '發送狀態未知，請查群發紀錄，勿直接重複發送：' + (err.message || String(err)));
         } finally {
-          btn.disabled = false;
+          btn.disabled = true;
           btn.textContent = oldText;
           btn.style.opacity = '';
         }
@@ -7591,6 +7657,9 @@ const ADMIN_PIN = '9753';
     }
 
     function invalidateBroadcastPreview() {
+      state.broadcastPreviewMemberIds = [];
+      state.broadcastVerifiedPayload = '';
+      state.broadcastPreviewAt = 0;
       state.broadcastPreviewMemberIds = [];
       state.broadcastPreviewId = '';
       state.broadcastPreviewCount = 0;
