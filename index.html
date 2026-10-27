@@ -7560,14 +7560,8 @@ const ADMIN_PIN = '9753';
           showMessage('broadcastMsg', '預覽已過期或內容有變更，請重新預覽。');
           return;
         }
-        const confirmText = '發送 ' + count;
-        const typed = window.prompt(
-          '即將正式向 ' + count + ' 位會員發送 LINE 訊息。\n' +
-          '此操作會實際發送，不能撤回。\n\n' +
-          '請輸入：' + confirmText,
-          ''
-        );
-        if (typed !== confirmText) return;
+        // STEP8N3_DIRECT_SEND
+        // 預覽驗證通過後，直接呼叫發送 API。
 
         const btn = document.getElementById('sendBroadcastBtn');
         const oldText = btn.textContent;
