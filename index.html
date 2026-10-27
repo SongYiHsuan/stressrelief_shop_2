@@ -2258,6 +2258,11 @@ const ADMIN_PIN = '9753';
 
       return {
         ...source,
+        documentId: String(
+          source._firestoreDocId ||
+          source.documentId ||
+          ''
+        ),
         memberId:
           String(
             source.memberId ||
@@ -2504,6 +2509,8 @@ const ADMIN_PIN = '9753';
         }
 
         case 'previewBroadcast': {
+          // STEP8I_BROWSER_ONLY_PREVIEW
+          // 使用原有 members / walletLogs 直接預覽。
           const members =
             await getAdminMembersFromFirestore();
 
@@ -2532,8 +2539,88 @@ const ADMIN_PIN = '9753';
               payload.level || ''
             ).trim();
 
+          const hasTotalSpend =
+            String(payload.hasTotalSpend || '').trim();
+
+          const broadcastWalletSpendTotals = new Map();
+
+          if (hasTotalSpend !== '') {
+            const minimum = Number(hasTotalSpend);
+
+            if (
+              !Number.isFinite(minimum) ||
+              minimum < 0
+            ) {
+              throw new Error('累積消費金額必須是非負數');
+            }
+
+            const walletSnapshot = await firebaseDb
+              .collection('walletLogs')
+              .get();
+
+            walletSnapshot.forEach((doc) => {
+              const log = doc.data() || {};
+              const amount = Number(log.amount);
+
+              if (
+                String(log.type || '').trim() !== '使用' ||
+                !Number.isFinite(amount) ||
+                amount >= 0
+              ) {
+                return;
+              }
+
+              const identities = [
+                log.memberDocumentId,
+                log.lineUserId
+              ]
+                .map(value => String(value || '').trim())
+                .filter(Boolean);
+
+              for (const identity of new Set(identities)) {
+                broadcastWalletSpendTotals.set(
+                  identity,
+                  (broadcastWalletSpendTotals.get(identity) || 0) -
+                    amount
+                );
+              }
+            });
+          }
+
           const filteredMembers =
             members.filter((member) => {
+              const identities = [
+                member.documentId,
+                member.lineUserId
+              ]
+                .map(value => String(value || '').trim())
+                .filter(Boolean);
+
+              const totalSpend = Math.max(
+                0,
+                ...identities.map(
+                  identity =>
+                    broadcastWalletSpendTotals.get(identity) || 0
+                )
+              );
+
+              const minTotalSpend = Number(hasTotalSpend);
+
+              if (
+                hasTotalSpend !== '' &&
+                (
+                  !Number.isFinite(minTotalSpend) ||
+                  minTotalSpend < 0 ||
+                  totalSpend < minTotalSpend
+                )
+              ) {
+                return false;
+              }
+
+              if (!String(member.lineUserId || '').trim()) {
+                return false;
+              }
+
               /*
                * 會員等級
                */
@@ -2689,38 +2776,11 @@ const ADMIN_PIN = '9753';
         }
 
         case 'sendBroadcast': {
-          if (!firebaseAuth.currentUser) {
-            throw new Error(
-              '請先登入後台'
-            );
-          }
-
-          const callable =
-            firebaseFunctions
-              .httpsCallable(
-                'sendBroadcast'
-              );
-
-          try {
-            const result =
-              await callable(
-                payload || {}
-              );
-
-            return result.data || {};
-          } catch (error) {
-            console.error(
-              'sendBroadcast callable failed',
-              error
-            );
-
-            const message =
-              error?.details ||
-              error?.message ||
-              String(error);
-
-            throw new Error(message);
-          }
+          // STEP8I_BROWSER_ONLY_PREVIEW
+          // 預覽模式禁止從本網頁呼叫 LINE 群發。
+          throw new Error(
+            '目前僅開放預覽名單，正式 LINE 群發已停用。'
+          );
         }
 
         default:
@@ -7178,6 +7238,16 @@ const ADMIN_PIN = '9753';
                     <option value="no">沒有儲值餘額</option>
                   </select>
                 </div>
+
+                <div class="form-row">
+                  <label>累積消費金額</label>
+                  <input id="filterTotalSpend"
+                         type="number"
+                         min="0"
+                         step="1"
+                         inputmode="numeric"
+                         placeholder="例如 1000" />
+                </div>
               </div>
 
               <div class="btn-row">
@@ -7275,6 +7345,8 @@ const ADMIN_PIN = '9753';
 
       document.getElementById('previewBroadcastBtn').onclick = async () => {
         const payload = getBroadcastPayload();
+        payload.hasTotalSpend =
+          document.getElementById('filterTotalSpend').value;
         const btn = document.getElementById('previewBroadcastBtn');
         const oldText = btn.textContent;
         const previewEl = document.getElementById('broadcastPreview');
@@ -7294,6 +7366,21 @@ const ADMIN_PIN = '9753';
             throw new Error('後端未回傳預覽名單編號');
           }
 
+          const previewIds = (data.members || []).map(
+            member => String(member.lineUserId || '').trim()
+          );
+
+          if (
+            previewIds.length !== Number(data.count) ||
+            previewIds.some(id => !id) ||
+            new Set(previewIds).size !== previewIds.length
+          ) {
+            throw new Error(
+              '預覽名單缺少 LINE ID 或存在重複會員，已停止發送。'
+            );
+          }
+
+          state.broadcastPreviewMemberIds = previewIds;
           state.broadcastPreviewId = data.previewId;
           state.broadcastPreviewCount = Number(data.count || 0);
 
@@ -7301,15 +7388,16 @@ const ADMIN_PIN = '9753';
             document.getElementById('sendBroadcastBtn');
 
           if (sendBtn) {
-            sendBtn.disabled = false;
-            sendBtn.title = '';
+            sendBtn.disabled = true;
+            sendBtn.title = '預覽測試模式：正式群發已停用';
+            sendBtn.title = '預覽模式：正式群發已停用';
           }
 
           showMessage(
             'broadcastMsg',
             '符合條件會員：' +
               data.count +
-              ' 人。正式發送將只限此預覽名單。'
+              ' 人。目前為預覽測試模式，正式群發已停用。'
           );
 
           if (previewEl) {
@@ -7319,6 +7407,17 @@ const ADMIN_PIN = '9753';
               );
           }
         } catch (err) {
+          state.broadcastPreviewId = '';
+          state.broadcastPreviewMemberIds = [];
+          state.broadcastPreviewCount = 0;
+
+          const sendBtn =
+            document.getElementById('sendBroadcastBtn');
+
+          if (sendBtn) {
+            sendBtn.disabled = true;
+          }
+
           showMessage('broadcastMsg', err.message || String(err));
         } finally {
           btn.disabled = false;
@@ -7328,7 +7427,21 @@ const ADMIN_PIN = '9753';
       };
 
       document.getElementById('sendBroadcastBtn').onclick = async () => {
+        // STEP8I_PREVIEW_ONLY
+        const previewOnlyMode = true;
+
+        if (previewOnlyMode) {
+          showMessage(
+            'broadcastMsg',
+            '目前僅開放預覽名單，正式群發已停用。'
+          );
+          return;
+        }
+
+
         const payload = getBroadcastPayload();
+        payload.hasTotalSpend =
+          document.getElementById('filterTotalSpend').value;
 
         if (!state.broadcastPreviewId) {
           showMessage(
@@ -7340,6 +7453,8 @@ const ADMIN_PIN = '9753';
 
         payload.previewId =
           state.broadcastPreviewId;
+        payload.previewMemberIds =
+          state.broadcastPreviewMemberIds || [];
 
         if (!payload.title && !payload.content) {
           showMessage('broadcastMsg', '請至少輸入標題或內容。');
@@ -7357,6 +7472,7 @@ const ADMIN_PIN = '9753';
           const data = await api('sendBroadcast', payload);
 
           state.broadcastPreviewId = '';
+          state.broadcastPreviewMemberIds = [];
           state.broadcastPreviewCount = 0;
 
           showMessage(
@@ -7389,6 +7505,7 @@ const ADMIN_PIN = '9753';
         'filterMinStoredValue',
         'filterJoinedAfterDate',
         'filterStoredValue',
+        'filterTotalSpend',
       ].forEach((id) => {
         const element =
           document.getElementById(id);
@@ -7425,6 +7542,7 @@ const ADMIN_PIN = '9753';
     }
 
     function invalidateBroadcastPreview() {
+      state.broadcastPreviewMemberIds = [];
       state.broadcastPreviewId = '';
       state.broadcastPreviewCount = 0;
 
