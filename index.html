@@ -2542,67 +2542,113 @@ const ADMIN_PIN = '9753';
           const hasTotalSpend =
             String(payload.hasTotalSpend || '').trim();
 
-          const broadcastWalletSpendTotals = new Map();
 
-          if (hasTotalSpend !== '') {
-            const minimum = Number(hasTotalSpend);
+          // STEP8J_WALLET_SPEND_FIX
+          // 累積消費 = 歷史儲值金「使用」的扣款總額。
+          const minimumSpend = hasTotalSpend === ''
+            ? null : Number(hasTotalSpend);
 
-            if (
-              !Number.isFinite(minimum) ||
-              minimum < 0
-            ) {
-              throw new Error('累積消費金額必須是非負數');
-            }
-
-            const walletSnapshot = await firebaseDb
-              .collection('walletLogs')
-              .get();
-
-            walletSnapshot.forEach((doc) => {
-              const log = doc.data() || {};
-              const amount = Number(log.amount);
-
-              if (
-                String(log.type || '').trim() !== '使用' ||
-                !Number.isFinite(amount) ||
-                amount >= 0
-              ) {
-                return;
-              }
-
-              const identities = [
-                log.memberDocumentId,
-                log.lineUserId
-              ]
-                .map(value => String(value || '').trim())
-                .filter(Boolean);
-
-              for (const identity of new Set(identities)) {
-                broadcastWalletSpendTotals.set(
-                  identity,
-                  (broadcastWalletSpendTotals.get(identity) || 0) -
-                    amount
-                );
-              }
-            });
+          if (
+            minimumSpend !== null &&
+            (!Number.isFinite(minimumSpend) || minimumSpend < 0)
+          ) {
+            throw new Error('累積消費金額必須是非負數');
           }
 
-          const filteredMembers =
-            members.filter((member) => {
-              const identities = [
-                member.documentId,
-                member.lineUserId
-              ]
-                .map(value => String(value || '').trim())
-                .filter(Boolean);
+          const identityOwners = new Map();
+          const totalsByDocumentId = new Map();
+          const cleanIdentity = value =>
+            String(value || '').trim();
 
-              const totalSpend = Math.max(
-                0,
-                ...identities.map(
-                  identity =>
-                    broadcastWalletSpendTotals.get(identity) || 0
-                )
+          for (const member of members) {
+            const docId = cleanIdentity(member.documentId);
+
+            if (!docId) {
+              throw new Error('會員缺少文件 ID，停止預覽');
+            }
+
+            totalsByDocumentId.set(docId, 0);
+
+            for (const identity of new Set([
+              docId,
+              cleanIdentity(member.lineUserId)
+            ].filter(Boolean))) {
+              const existingOwner =
+                identityOwners.get(identity);
+
+              if (existingOwner && existingOwner !== docId) {
+                throw new Error('會員識別重複，停止預覽');
+              }
+
+              identityOwners.set(identity, docId);
+            }
+          }
+
+          // 即使金額欄位留空，也要顯示實際累積消費。
+          const walletSnapshot = await firebaseDb
+            .collection('walletLogs').get();
+
+          let unmatchedUsage = 0;
+
+          walletSnapshot.forEach(doc => {
+            const log = doc.data() || {};
+            const amount = Number(log.amount);
+
+            if (
+              String(log.type || '').trim() !== '使用' ||
+              !Number.isFinite(amount) ||
+              amount >= 0
+            ) {
+              return;
+            }
+
+            const owners = new Set();
+
+            for (const identity of new Set([
+              cleanIdentity(log.memberDocumentId),
+              cleanIdentity(log.lineUserId)
+            ].filter(Boolean))) {
+              const owner = identityOwners.get(identity);
+              if (owner) owners.add(owner);
+            }
+
+            if (owners.size > 1) {
+              throw new Error(
+                '儲值使用紀錄有會員歸屬衝突，停止預覽'
               );
+            }
+
+            if (owners.size === 0) {
+              unmatchedUsage++;
+              return;
+            }
+
+            const docId = [...owners][0];
+
+            totalsByDocumentId.set(
+              docId,
+              (totalsByDocumentId.get(docId) || 0) - amount
+            );
+          });
+
+          if (unmatchedUsage > 0) {
+            throw new Error(
+              '有 ' + unmatchedUsage +
+              ' 筆使用紀錄無法對應會員，已停止預覽'
+            );
+          }
+
+          // 讓「篩選」和「表格顯示」共用同一金額。
+          const membersWithSpend = members.map(member => ({
+            ...member,
+            totalSpend: totalsByDocumentId.get(
+              cleanIdentity(member.documentId)
+            ) || 0
+          }));
+
+          const filteredMembers =
+            membersWithSpend.filter((member) => {
+              const totalSpend = Number(member.totalSpend || 0);
 
               const minTotalSpend = Number(hasTotalSpend);
 
@@ -7403,7 +7449,10 @@ const ADMIN_PIN = '9753';
           if (previewEl) {
             previewEl.innerHTML =
               renderMembersTable(
-                normalizeMemberList(data.members)
+                normalizeMemberList(data.members).map((member, index) => ({
+                  ...member,
+                  totalSpend: Number(data.members[index].totalSpend || 0)
+                }))
               );
           }
         } catch (err) {
